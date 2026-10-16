@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Financeiro</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182230;--muted:#667085;--line:#e7ebf0;--green:#15803d;--green-bg:#dcfce7;--red:#b42318;--red-bg:#fee4e2;--blue:#3157d5;--blue-bg:#eef2ff;--shadow:0 8px 30px rgba(24,34,48,.06)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}button{cursor:pointer;border:0;border-radius:11px;padding:11px 15px;font-weight:650;transition:.15s}button:hover{filter:brightness(.97);transform:translateY(-1px)}.app{max-width:1050px;margin:0 auto;padding:32px 20px 48px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.eyebrow{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:750}.top h1{font-size:28px;margin:5px 0 0;letter-spacing:-.04em}.month-select{border:1px solid var(--line);background:#fff;padding:11px 13px;border-radius:12px;color:var(--ink);font-weight:650}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}.metric{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);min-width:0}.metric-label{font-size:13px;color:var(--muted);font-weight:650;margin-bottom:12px}.metric-value{font-size:clamp(21px,3vw,29px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.metric.available .metric-value{display:inline-block;background:var(--green-bg);color:var(--green);padding:5px 9px;border-radius:9px}.metric.spent .metric-value{display:inline-block;background:var(--red-bg);color:var(--red);padding:5px 9px;border-radius:9px}.metric.remaining .metric-value{color:var(--green)}.metric.remaining.negative .metric-value{color:var(--red)}.equation{color:var(--muted);font-size:12px;margin-top:12px}.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.85fr);gap:20px;align-items:start}.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}.panel-head{padding:20px 21px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}.panel-head h2{font-size:17px;margin:0;letter-spacing:-.02em}.panel-head p{font-size:12px;color:var(--muted);margin:5px 0 0}.count{font-size:12px;font-weight:750;color:var(--muted);background:#f2f4f7;padding:6px 9px;border-radius:20px}.balance-edit{padding:0 21px 18px}.field-label{display:block;font-size:12px;font-weight:700;color:#475467;margin-bottom:7px}.balance-row{display:flex;gap:9px}.balance-row input{max-width:220px}.field,input,select{width:100%;border:1px solid #d9dee7;background:#fff;border-radius:10px;padding:11px 12px;color:var(--ink);outline:none}.field:focus,input:focus,select:focus{border-color:#8195ef;box-shadow:0 0 0 3px rgba(49,87,213,.1)}.btn-primary{background:var(--blue);color:white}.btn-soft{background:var(--blue-bg);color:var(--blue)}.btn-danger{background:#fff1f0;color:var(--red);padding:7px 10px;font-size:12px}.btn-small{padding:8px 10px;font-size:12px}.expense-form{border-top:1px solid var(--line);padding:17px 21px 20px;background:#fcfcfd}.form-grid{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:10px}.form-actions{display:flex;justify-content:flex-end;margin-top:12px}.list{padding:0 21px 12px}.expense{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:15px 0;border-top:1px solid var(--line)}.expense-name{font-weight:720;text-transform:none;overflow-wrap:anywhere}.expense-date{font-size:12px;color:var(--muted);margin-top:4px}.expense-value{font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;white-space:nowrap}.expense-actions{display:flex;gap:6px}.empty{padding:26px 0;color:var(--muted);font-size:14px;text-align:center}.pending-panel{border-color:#dfe5ff}.pending-panel .panel-head{background:#f8f9ff}.pending-note{margin:0 21px 17px;color:var(--muted);font-size:12px;line-height:1.5}.pending-form{padding:0 21px 18px}.pending-list{padding:0 21px 12px}.pending-item{padding:14px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}.pending-name{font-weight:720}.pending-when{font-size:12px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}.pending-value{font-weight:800;color:var(--blue);white-space:nowrap}.footnote{color:var(--muted);font-size:12px;text-align:center;margin-top:5px}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#182230;color:white;padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);display:none;z-index:5}.toast.show{display:block}@media(max-width:760px){.app{padding:22px 14px 35px}.summary{grid-template-columns:1fr;gap:10px}.metric{padding:16px 18px}.metric-value{font-size:26px}.layout{grid-template-columns:1fr}.top h1{font-size:24px}.form-grid{grid-template-columns:1fr 1fr}.form-grid .name-field{grid-column:1/-1}.expense{gap:8px}.expense-actions{flex-direction:column}.panel-head{padding:18px 17px 14px}.balance-edit,.list,.pending-list,.pending-form{padding-left:17px;padding-right:17px}.pending-note{margin-left:17px;margin-right:17px}}@media(max-width:390px){.top{align-items:flex-start;flex-direction:column}.form-grid{grid-template-columns:1fr}.form-grid .name-field{grid-column:auto}.expense{grid-template-columns:minmax(0,1fr) auto}.expense-actions{grid-column:1/-1;flex-direction:row;justify-content:flex-end}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div><div class="eyebrow">Seu dinheiro, em ordem</div><h1>Meu Financeiro</h1></div>
+    <select id="monthSelect" class="month-select" aria-label="Mês de referência"></select>
+  </header>
+  <section class="summary" aria-label="Resumo financeiro">
+    <div class="metric available"><div class="metric-label">Dinheiro disponível</div><div id="availableDisplay" class="metric-value">R$ 415,02</div><div class="equation">Saldo inicial do mês</div></div>
+    <div class="metric spent"><div class="metric-label">Total de gastos</div><div id="spentDisplay" class="metric-value">R$ 399,82</div><div class="equation" id="expenseCount">5 lançamentos</div></div>
+    <div class="metric remaining" id="remainingCard"><div class="metric-label">Saldo restante</div><div id="remainingDisplay" class="metric-value">R$ 15,20</div><div class="equation">Disponível − gastos</div></div>
+  </section>
+  <main class="layout">
+    <div>
+      <section class="panel">
+        <div class="panel-head"><div><h2>Gastos do mês</h2><p>Registre e acompanhe suas saídas.</p></div><span class="count" id="expenseCountBadge">5 itens</span></div>
+        <div class="balance-edit"><label class="field-label" for="startingBalance">Quanto você tem disponível? (R$)</label><div class="balance-row"><input id="startingBalance" inputmode="decimal" aria-label="Saldo inicial"><button id="saveBalance" class="btn-soft">Atualizar saldo</button></div></div>
+        <div class="expense-form">
+          <div class="field-label">Adicionar gasto</div>
+          <form id="expenseForm">
+            <div class="form-grid">
+              <div class="name-field"><label class="field-label" for="expenseName">Nome</label><input id="expenseName" required maxlength="80" placeholder="Nome do gasto"></div>
+              <div><label class="field-label" for="expenseAmount">Valor (R$)</label><input id="expenseAmount" required inputmode="decimal" placeholder="0,00"></div>
+              <div><label class="field-label" for="expenseDate">Data</label><input id="expenseDate" required placeholder="DD/MM" maxlength="5" inputmode="numeric"></div>
+            </div>
+            <div class="form-actions"><button class="btn-primary" type="submit">+ Adicionar gasto</button></div>
+          </form>
+        </div>
+        <div id="expenseList" class="list"></div>
+      </section>
+    </div>
+    <aside>
+      <section class="panel pending-panel">
+        <div class="panel-head"><div><h2>Pendências futuras</h2><p>Fora do cálculo do saldo mensal</p></div><span class="count" id="pendingCount">1 item</span></div>
+        <p class="pending-note">Anote compromissos que dependem de um evento futuro. Eles ficam separados dos gastos deste mês.</p>
+        <form id="pendingForm" class="pending-form">
+          <label class="field-label" for="pendingName">Nome da pendência</label><input id="pendingName" required maxlength="80" placeholder="Nome da pendência">
+          <label class="field-label" for="pendingAmount" style="margin-top:11px">Valor (R$)</label><input id="pendingAmount" required inputmode="decimal" placeholder="1500,00">
+          <label class="field-label" for="pendingWhen" style="margin-top:11px">Quando / condição</label><input id="pendingWhen" required maxlength="120" placeholder="Descreva quando será pago">
+          <div class="form-actions"><button class="btn-primary" type="submit">+ Adicionar pendência</button></div>
+        </form>
+        <div id="pendingList" class="pending-list"></div>
+      </section>
+      <p class="footnote">Seus dados ficam salvos neste navegador, usando armazenamento local.</p>
+    </aside>
+  </main>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script>
+(() => {
+  const KEY = 'meuFinanceiro.v2';
+  const months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  const money = n => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);
+  function parseMoney(value) {
+    let s = String(value ?? '').trim().replace(/R\$/gi,'').replace(/\s/g,'');
+    if (!s) return NaN;
+    if (s.includes(',')) s = s.replace(/\./g,'').replace(',','.');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  const uid = () => (Date.now().toString(36) + Math.random().toString(36).slice(2,8));
+  const initial = {
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+    monthsData: {},
+    pending: []
+  };
+  const now = new Date();
+  // Começa sem lançamentos de exemplo; o usuário cadastra seus próprios dados.
+  initial.month = now.getMonth();
+  initial.year = now.getFullYear();
+  initial.monthsData[`${initial.year}-${initial.month}`] = {
+    balance:0,
+    expenses:[]
+  };
+  let state;
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY));
+    state = saved && saved.monthsData && Array.isArray(saved.pending) ? saved : initial;
+  } catch { state = initial; }
+  const $ = id => document.getElementById(id);
+  function monthKey(){return `${state.year}-${state.month}`;}
+  function getMonthData(){if(!state.monthsData[monthKey()]) state.monthsData[monthKey()]={balance:0,expenses:[]};return state.monthsData[monthKey()];}
+  function persist(){localStorage.setItem(KEY,JSON.stringify(state));}
+  function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),2200);}
+  function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function renderMonths(){
+    const select=$('monthSelect');select.innerHTML='';
+    months.forEach((m,i)=>{const op=document.createElement('option');op.value=i;op.textContent=`${m} — ${state.year}`;select.appendChild(op);});
+    select.value=state.month;
+  }
+  function render(){
+    const data=getMonthData(), total=data.expenses.reduce((s,e)=>s+e.amount,0), remaining=data.balance-total;
+    $('availableDisplay').textContent=money(data.balance);
+    $('spentDisplay').textContent=money(total);
+    $('remainingDisplay').textContent=money(remaining);
+    $('remainingCard').classList.toggle('negative',remaining<0);
+    $('expenseCount').textContent=`${data.expenses.length} ${data.expenses.length===1?'lançamento':'lançamentos'}`;
+    $('expenseCountBadge').textContent=`${data.expenses.length} ${data.expenses.length===1?'item':'itens'}`;
+    $('startingBalance').value=data.balance.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    $('expenseList').innerHTML=data.expenses.length ? data.expenses.slice().sort((a,b)=>a.day-b.day).map(e=>`
+      <div class="expense"><div><div class="expense-name">${safe(e.name)}</div><div class="expense-date">${String(e.day).padStart(2,'0')}/${String(state.month+1).padStart(2,'0')}</div></div>
+      <div class="expense-value">− ${money(e.amount)}</div><div class="expense-actions"><button class="btn-danger btn-small" data-delete-expense="${e.id}" aria-label="Excluir ${safe(e.name)}">Excluir</button></div></div>`).join('') : '<div class="empty">Nenhum gasto neste mês. Adicione o primeiro acima.</div>';
+    $('pendingCount').textContent=`${state.pending.length} ${state.pending.length===1?'item':'itens'}`;
+    $('pendingList').innerHTML=state.pending.length ? state.pending.map(p=>`
+      <div class="pending-item"><div><div class="pending-name">${safe(p.name)}</div><div class="pending-when">${safe(p.when)}</div></div><div style="text-align:right"><div class="pending-value">${money(p.amount)}</div><button class="btn-danger btn-small" data-delete-pending="${p.id}" style="margin-top:7px">Excluir</button></div></div>`).join('') : '<div class="empty">Nenhuma pendência cadastrada.</div>';
+    renderMonths();
+  }
+  $('monthSelect').addEventListener('change',e=>{state.month=Number(e.target.value);getMonthData();persist();render();});
+  $('saveBalance').addEventListener('click',()=>{
+    const val=parseMoney($('startingBalance').value);
+    if(!Number.isFinite(val)||val<0){toast('Digite um saldo válido.');return;}
+    getMonthData().balance=Math.round(val*100)/100;persist();render();toast('Saldo atualizado!');
+  });
+  $('expenseForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=$('expenseName').value.trim(),amount=parseMoney($('expenseAmount').value),raw=$('expenseDate').value.trim();
+    const match=raw.match(/^(\d{1,2})(?:\/(\d{1,2}))?$/);
+    if(!name||!Number.isFinite(amount)||amount<=0){toast('Confira o nome e o valor do gasto.');return;}
+    if(!match){toast('Use a data no formato DD ou DD/MM.');return;}
+    const day=Number(match[1]),month=match[2]?Number(match[2]):state.month+1;
+    if(day<1||day>31||month<1||month>12){toast('Confira o dia e o mês.');return;}
+    if(month!==state.month+1){toast(`Você está vendo ${months[state.month]}. Escolha uma data desse mês.`);return;}
+    getMonthData().expenses.push({id:uid(),name,amount:Math.round(amount*100)/100,day});
+    persist();render();e.target.reset();$('expenseName').focus();toast('Gasto adicionado!');
+  });
+  $('pendingForm').addEventListener('submit',e=>{
+    e.preventDefault();const name=$('pendingName').value.trim(),amount=parseMoney($('pendingAmount').value),when=$('pendingWhen').value.trim();
+    if(!name||!when||!Number.isFinite(amount)||amount<=0){toast('Preencha a pendência com um valor válido.');return;}
+    state.pending.push({id:uid(),name,amount:Math.round(amount*100)/100,when});persist();render();e.target.reset();toast('Pendência adicionada!');
+  });
+  document.addEventListener('click',e=>{
+    const exp=e.target.closest('[data-delete-expense]'),pen=e.target.closest('[data-delete-pending]');
+    if(exp){const data=getMonthData();data.expenses=data.expenses.filter(x=>x.id!==exp.dataset.deleteExpense);persist();render();toast('Gasto excluído.');}
+    if(pen){state.pending=state.pending.filter(x=>x.id!==pen.dataset.deletePending);persist();render();toast('Pendência excluída.');}
+  });
+  $('expenseDate').addEventListener('input',e=>{let v=e.target.value.replace(/[^\d/]/g,'');if(/^\d{2}$/.test(v))v+='/';e.target.value=v.slice(0,5);});
+  render();
+})();
+</script>
+</body>
+</html>
