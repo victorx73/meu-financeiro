@@ -17,8 +17,8 @@
   </header>
   <section class="summary" aria-label="Resumo financeiro">
     <div class="metric available"><div class="metric-label">Dinheiro disponível</div><div id="availableDisplay" class="metric-value">R$ 415,02</div><div class="equation">Saldo inicial do mês</div></div>
-    <div class="metric spent"><div class="metric-label">Total de gastos</div><div id="spentDisplay" class="metric-value">R$ 399,82</div><div class="equation" id="expenseCount">5 lançamentos</div></div>
-    <div class="metric remaining" id="remainingCard"><div class="metric-label">Saldo restante</div><div id="remainingDisplay" class="metric-value">R$ 15,20</div><div class="equation">Disponível − gastos</div></div>
+    <div class="metric spent"><div class="metric-label">Gastos em aberto</div><div id="spentDisplay" class="metric-value">R$ 0,00</div><div class="equation" id="expenseCount">0 lançamentos</div></div>
+    <div class="metric remaining" id="remainingCard"><div class="metric-label">Saldo restante</div><div id="remainingDisplay" class="metric-value">R$ 15,20</div><div class="equation">Disponível − gastos não pagos</div></div>
     <div class="metric forecast"><div class="metric-label">Previsão de receita</div><div id="forecastDisplay" class="metric-value">R$ 0,00</div><div class="equation" id="forecastDaysLabel">0 dias selecionados</div></div>
     <div class="metric projected"><div class="metric-label">Saldo projetado</div><div id="projectedDisplay" class="metric-value">R$ 0,00</div><div class="equation">Saldo restante + previsão</div></div>
   </section>
@@ -47,6 +47,11 @@
               <div class="name-field"><label class="field-label" for="expenseName">Nome</label><input id="expenseName" required maxlength="80" placeholder="Nome do gasto"></div>
               <div><label class="field-label" for="expenseAmount">Valor (R$)</label><input id="expenseAmount" required inputmode="decimal" placeholder="0,00"></div>
               <div><label class="field-label" for="expenseDate">Data</label><input id="expenseDate" required placeholder="DD/MM" maxlength="5" inputmode="numeric"></div>
+            </div>
+            <div class="installment-options" style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff">
+              <label style="display:flex;gap:9px;align-items:center;font-size:13px;font-weight:650;color:#344054"><input id="installmentEnabled" type="checkbox" style="width:auto"> Parcelar esta compra</label>
+              <div id="installmentCountWrap" style="display:none;margin-top:10px;max-width:220px"><label class="field-label" for="installmentCount">Quantidade de parcelas</label><input id="installmentCount" type="number" min="2" max="36" value="2" step="1"></div>
+              <div id="installmentHint" class="equation">Ao ativar, o valor informado será dividido em parcelas mensais.</div>
             </div>
             <div class="form-actions"><button class="btn-primary" type="submit">+ Adicionar gasto</button></div>
           </form>
@@ -103,9 +108,27 @@
     const saved = JSON.parse(localStorage.getItem(KEY));
     state = saved && saved.monthsData && Array.isArray(saved.pending) ? saved : initial;
   } catch { state = initial; }
+  // Migração única: gastos que já estavam marcados como pagos na versão anterior
+  // ainda não tinham sido descontados do saldo disponível.
+  if (!state.balancePaymentMigrationV1) {
+    Object.values(state.monthsData || {}).forEach(monthData => {
+      if (!Array.isArray(monthData.expenses)) monthData.expenses = [];
+      monthData.expenses.forEach(expense => {
+        if (expense.done && Number.isFinite(expense.amount)) {
+          monthData.balance = roundMigrationMoney((Number(monthData.balance) || 0) - expense.amount);
+        }
+      });
+    });
+    state.balancePaymentMigrationV1 = true;
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+  function roundMigrationMoney(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
   const $ = id => document.getElementById(id);
   function monthKey(){return `${state.year}-${state.month}`;}
   function getMonthData(){if(!state.monthsData[monthKey()]) state.monthsData[monthKey()]={balance:0,expenses:[]};const d=state.monthsData[monthKey()];if(!Array.isArray(d.expenses))d.expenses=[];if(!Number.isFinite(d.dailyRate))d.dailyRate=0;if(typeof d.incomeSource!=='string')d.incomeSource='';if(!Array.isArray(d.workDays))d.workDays=[];return d;}
+  function monthDataFor(year,month){const key=`${year}-${month}`;if(!state.monthsData[key])state.monthsData[key]={balance:0,expenses:[],dailyRate:0,incomeSource:'',workDays:[]};const d=state.monthsData[key];if(!Array.isArray(d.expenses))d.expenses=[];return d;}
+  function shiftMonth(year,month,offset){const date=new Date(year,month+offset,1);return {year:date.getFullYear(),month:date.getMonth()};}
+  function roundMoney(n){return Math.round((n+Number.EPSILON)*100)/100;}
   function persist(){localStorage.setItem(KEY,JSON.stringify(state));}
   function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),2200);}
   function safe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -144,7 +167,7 @@
     renderCalendar(data);
   }
   function render(){
-    const data=getMonthData(), total=data.expenses.reduce((s,e)=>s+e.amount,0), remaining=data.balance-total, forecast=getForecast(data);
+    const data=getMonthData(), total=data.expenses.filter(e=>!e.done).reduce((s,e)=>s+e.amount,0), remaining=data.balance-total, forecast=getForecast(data);
     $('availableDisplay').textContent=money(data.balance);
     $('spentDisplay').textContent=money(total);
     $('remainingDisplay').textContent=money(remaining);
@@ -155,7 +178,7 @@
     $('expenseCountBadge').textContent=`${data.expenses.length} ${data.expenses.length===1?'item':'itens'}`;
     $('startingBalance').value=data.balance.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     $('expenseList').innerHTML=data.expenses.length ? data.expenses.slice().sort((a,b)=>a.day-b.day).map(e=>`
-      <div class="expense ${e.done?'is-done':''}"><div><div class="expense-name">${safe(e.name)}</div><div class="expense-date">${String(e.day).padStart(2,'0')}/${String(state.month+1).padStart(2,'0')}</div>${e.done?'<div class="status-label">✓ Pago / concluído</div>':''}</div>
+      <div class="expense ${e.done?'is-done':''}"><div><div class="expense-name">${safe(e.name)}</div><div class="expense-date">${String(e.day).padStart(2,'0')}/${String(state.month+1).padStart(2,'0')}${e.installmentTotal?` · Parcela ${e.installmentIndex}/${e.installmentTotal}`:''}</div>${e.done?'<div class="status-label">✓ Pago / concluído</div>':''}</div>
       <div class="expense-value">− ${money(e.amount)}</div><div class="expense-actions"><button class="btn-edit btn-small" data-edit-expense="${e.id}">Editar</button><button class="${e.done?'btn-soft':'btn-success'} btn-small" data-toggle-expense="${e.id}">${e.done?'Desmarcar':'Marcar pago'}</button><button class="btn-danger btn-small" data-delete-expense="${e.id}">Excluir</button></div></div>`).join('') : '<div class="empty">Nenhum gasto neste mês. Adicione o primeiro acima.</div>';
     $('pendingCount').textContent=`${state.pending.length} ${state.pending.length===1?'item':'itens'}`;
     $('pendingList').innerHTML=state.pending.length ? state.pending.map(p=>`
@@ -165,7 +188,7 @@
   $('monthSelect').addEventListener('change',e=>{state.month=Number(e.target.value);getMonthData();persist();render();});
   $('yearSelect').addEventListener('change',e=>{state.year=Number(e.target.value);getMonthData();persist();render();});
   $('dailyRate').addEventListener('change',()=>{const val=parseMoney($('dailyRate').value);if(!Number.isFinite(val)||val<0){toast('Digite uma diária válida.');renderSimulator(getMonthData());return;}getMonthData().dailyRate=Math.round(val*100)/100;persist();render();});
-  $('dailyRate').addEventListener('input',()=>{const val=parseMoney($('dailyRate').value);if(Number.isFinite(val)&&val>=0){getMonthData().dailyRate=Math.round(val*100)/100;const d=getMonthData();$('forecastDisplay').textContent=money(getForecast(d));$('projectedDisplay').textContent=money(d.balance-d.expenses.reduce((sum,x)=>sum+x.amount,0)+getForecast(d));$('forecastTotal').textContent=money(getForecast(d));$('dailyDetails').innerHTML=`Valor da diária: <strong>${money(d.dailyRate)}</strong>`;$('calendar').querySelectorAll('[data-calendar-day]').forEach(btn=>{btn.innerHTML=`<span>${btn.dataset.calendarDay}</span>${d.workDays.includes(Number(btn.dataset.calendarDay))?`<span class="day-amount">${safe(money(d.dailyRate))}</span>`:''}`;});}});
+  $('dailyRate').addEventListener('input',()=>{const val=parseMoney($('dailyRate').value);if(Number.isFinite(val)&&val>=0){getMonthData().dailyRate=Math.round(val*100)/100;const d=getMonthData();$('forecastDisplay').textContent=money(getForecast(d));$('projectedDisplay').textContent=money(d.balance-d.expenses.filter(x=>!x.done).reduce((sum,x)=>sum+x.amount,0)+getForecast(d));$('forecastTotal').textContent=money(getForecast(d));$('dailyDetails').innerHTML=`Valor da diária: <strong>${money(d.dailyRate)}</strong>`;$('calendar').querySelectorAll('[data-calendar-day]').forEach(btn=>{btn.innerHTML=`<span>${btn.dataset.calendarDay}</span>${d.workDays.includes(Number(btn.dataset.calendarDay))?`<span class="day-amount">${safe(money(d.dailyRate))}</span>`:''}`;});}});
   $('incomeSource').addEventListener('change',()=>{getMonthData().incomeSource=$('incomeSource').value.trim();persist();render();});
   $('calendar').addEventListener('click',e=>{const btn=e.target.closest('[data-calendar-day]');if(!btn)return;const data=getMonthData(),day=Number(btn.dataset.calendarDay);data.workDays=data.workDays.includes(day)?data.workDays.filter(d=>d!==day):[...data.workDays,day].sort((a,b)=>a-b);persist();render();});
   $('clearDays').addEventListener('click',()=>{getMonthData().workDays=[];persist();render();toast('Dias selecionados removidos.');});
@@ -183,8 +206,17 @@
     const day=Number(match[1]),month=match[2]?Number(match[2]):state.month+1;
     if(day<1||day>31||month<1||month>12){toast('Confira o dia e o mês.');return;}
     if(month!==state.month+1){toast(`Você está vendo ${months[state.month]}. Escolha uma data desse mês.`);return;}
-    getMonthData().expenses.push({id:uid(),name,amount:Math.round(amount*100)/100,day});
-    persist();render();e.target.reset();$('expenseName').focus();toast('Gasto adicionado!');
+    const totalAmount=roundMoney(amount), installmentsOn=$('installmentEnabled').checked;
+    const count=installmentsOn?Number($('installmentCount').value):1;
+    if(installmentsOn&&(!Number.isInteger(count)||count<2||count>36)){toast('Escolha de 2 a 36 parcelas.');return;}
+    const cents=Math.round(totalAmount*100), baseCents=Math.floor(cents/count), remainder=cents%count, groupId=installmentsOn?uid():null;
+    for(let i=0;i<count;i++){
+      const offset=shiftMonth(state.year,state.month,i), target=monthDataFor(offset.year,offset.month);
+      const installmentAmount=(baseCents+(i<remainder?1:0))/100;
+      const validDay=Math.min(day,new Date(offset.year,offset.month+1,0).getDate());
+      target.expenses.push({id:uid(),name:installmentsOn?`${name} (parcela ${i+1}/${count})`:name,amount:installmentAmount,day:validDay,done:false,...(installmentsOn?{installmentGroup:groupId,installmentIndex:i+1,installmentTotal:count}: {})});
+    }
+    persist();render();e.target.reset();$('installmentCount').value='2';$('installmentCountWrap').style.display='none';$('installmentHint').textContent='Ao ativar, o valor informado será dividido em parcelas mensais.';$('expenseName').focus();toast(installmentsOn?`Compra dividida em ${count} parcelas mensais.`:'Gasto adicionado!');
   });
   $('pendingForm').addEventListener('submit',e=>{
     e.preventDefault();const name=$('pendingName').value.trim(),amount=parseMoney($('pendingAmount').value),when=$('pendingWhen').value.trim();
@@ -195,7 +227,7 @@
     const exp=e.target.closest('[data-delete-expense]'), pen=e.target.closest('[data-delete-pending]');
     const toggleExp=e.target.closest('[data-toggle-expense]'), togglePen=e.target.closest('[data-toggle-pending]');
     const editExp=e.target.closest('[data-edit-expense]'), editPen=e.target.closest('[data-edit-pending]');
-    if(toggleExp){const item=getMonthData().expenses.find(x=>x.id===toggleExp.dataset.toggleExpense);if(item){item.done=!item.done;persist();render();toast(item.done?'Gasto marcado como pago.':'Gasto reaberto.');}return;}
+    if(toggleExp){const data=getMonthData(),item=data.expenses.find(x=>x.id===toggleExp.dataset.toggleExpense);if(item){if(!item.done){data.balance=roundMoney(data.balance-item.amount);item.done=true;}else{data.balance=roundMoney(data.balance+item.amount);item.done=false;}persist();render();toast(item.done?'Pago: saldo e campo de disponível atualizados.':'Gasto reaberto: valor devolvido ao saldo.');}return;}
     if(togglePen){const item=state.pending.find(x=>x.id===togglePen.dataset.togglePending);if(item){item.done=!item.done;persist();render();toast(item.done?'Pendência concluída.':'Pendência reaberta.');}return;}
     if(editExp){
       const item=getMonthData().expenses.find(x=>x.id===editExp.dataset.editExpense);if(!item)return;
@@ -204,7 +236,7 @@
       const dayText=prompt('Dia do mês (1 a 31):',String(item.day));if(dayText===null)return;
       const amount=parseMoney(amountText),day=Number(dayText.trim());
       if(!name.trim()||!Number.isFinite(amount)||amount<=0||!Number.isInteger(day)||day<1||day>31){toast('Dados inválidos; nada foi alterado.');return;}
-      item.name=name.trim();item.amount=Math.round(amount*100)/100;item.day=day;persist();render();toast('Gasto atualizado.');return;
+      const newAmount=roundMoney(amount);if(item.done){getMonthData().balance=roundMoney(getMonthData().balance+item.amount-newAmount);}item.name=name.trim();item.amount=newAmount;item.day=day;persist();render();toast('Gasto atualizado.');return;
     }
     if(editPen){
       const item=state.pending.find(x=>x.id===editPen.dataset.editPending);if(!item)return;
@@ -215,9 +247,11 @@
       if(!name.trim()||!when.trim()||!Number.isFinite(amount)||amount<=0){toast('Dados inválidos; nada foi alterado.');return;}
       item.name=name.trim();item.amount=Math.round(amount*100)/100;item.when=when.trim();persist();render();toast('Pendência atualizada.');return;
     }
-    if(exp){const data=getMonthData();data.expenses=data.expenses.filter(x=>x.id!==exp.dataset.deleteExpense);persist();render();toast('Gasto excluído.');}
+    if(exp){const data=getMonthData(),item=data.expenses.find(x=>x.id===exp.dataset.deleteExpense);if(item?.done)data.balance=roundMoney(data.balance+item.amount);data.expenses=data.expenses.filter(x=>x.id!==exp.dataset.deleteExpense);persist();render();toast('Gasto excluído.');}
     if(pen){state.pending=state.pending.filter(x=>x.id!==pen.dataset.deletePending);persist();render();toast('Pendência excluída.');}
   });
+  $('installmentEnabled').addEventListener('change',()=>{const on=$('installmentEnabled').checked;$('installmentCountWrap').style.display=on?'block':'none';$('installmentHint').textContent=on?'O valor total será dividido em parcelas. A primeira fica neste mês e as próximas nos meses seguintes.':'Ao ativar, o valor informado será dividido em parcelas mensais.';});
+  $('expenseAmount').addEventListener('input',()=>{const val=parseMoney($('expenseAmount').value),count=Number($('installmentCount').value);if($('installmentEnabled').checked&&Number.isFinite(val)&&val>0&&Number.isInteger(count)&&count>=2&&count<=36){$('installmentHint').textContent=`Aproximadamente ${money(val/count)} por parcela (${count}x); a diferença de centavos será distribuída automaticamente.`;}});
   $('expenseDate').addEventListener('input',e=>{let v=e.target.value.replace(/[^\d/]/g,'');if(/^\d{2}$/.test(v))v+='/';e.target.value=v.slice(0,5);});
   render();
 })();
