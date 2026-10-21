@@ -46,7 +46,7 @@
             <div class="form-grid">
               <div class="name-field"><label class="field-label" for="expenseName">Nome</label><input id="expenseName" required maxlength="80" placeholder="Nome do gasto"></div>
               <div><label class="field-label" for="expenseAmount">Valor (R$)</label><input id="expenseAmount" required inputmode="decimal" placeholder="0,00"></div>
-              <div><label class="field-label" for="expenseDate">Data</label><input id="expenseDate" required placeholder="DD/MM" maxlength="5" inputmode="numeric"></div>
+              <div><label class="field-label" for="expenseDate">Data</label><input id="expenseDate" placeholder="DD/MM" maxlength="5" inputmode="numeric"><label style="display:flex;gap:7px;align-items:center;margin-top:8px;font-size:12px;color:#475467"><input id="expenseDateTbd" type="checkbox" style="width:auto"> Data a definir</label></div>
             </div>
             <div class="installment-options" style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff">
               <label style="display:flex;gap:9px;align-items:center;font-size:13px;font-weight:650;color:#344054"><input id="installmentEnabled" type="checkbox" style="width:auto"> Parcelar esta compra</label>
@@ -66,7 +66,7 @@
         <form id="pendingForm" class="pending-form">
           <label class="field-label" for="pendingName">Nome da pendência</label><input id="pendingName" required maxlength="80" placeholder="Nome da pendência">
           <label class="field-label" for="pendingAmount" style="margin-top:11px">Valor (R$)</label><input id="pendingAmount" required inputmode="decimal" placeholder="1500,00">
-          <label class="field-label" for="pendingWhen" style="margin-top:11px">Quando / condição</label><input id="pendingWhen" required maxlength="120" placeholder="Descreva quando será pago">
+          <label class="field-label" for="pendingWhen" style="margin-top:11px">Quando / condição</label><input id="pendingWhen" maxlength="120" placeholder="Descreva quando será pago"><label style="display:flex;gap:7px;align-items:center;margin-top:8px;font-size:12px;color:#475467"><input id="pendingDateTbd" type="checkbox" style="width:auto"> Data a definir</label>
           <div class="form-actions"><button class="btn-primary" type="submit">+ Adicionar pendência</button></div>
         </form>
         <div id="pendingList" class="pending-list"></div>
@@ -177,8 +177,8 @@
     $('expenseCount').textContent=`${data.expenses.length} ${data.expenses.length===1?'lançamento':'lançamentos'}`;
     $('expenseCountBadge').textContent=`${data.expenses.length} ${data.expenses.length===1?'item':'itens'}`;
     $('startingBalance').value=data.balance.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    $('expenseList').innerHTML=data.expenses.length ? data.expenses.slice().sort((a,b)=>a.day-b.day).map(e=>`
-      <div class="expense ${e.done?'is-done':''}"><div><div class="expense-name">${safe(e.name)}</div><div class="expense-date">${String(e.day).padStart(2,'0')}/${String(state.month+1).padStart(2,'0')}${e.installmentTotal?` · Parcela ${e.installmentIndex}/${e.installmentTotal}`:''}</div>${e.done?'<div class="status-label">✓ Pago / concluído</div>':''}</div>
+    $('expenseList').innerHTML=data.expenses.length ? data.expenses.slice().sort((a,b)=>(a.day||99)-(b.day||99)).map(e=>`
+      <div class="expense ${e.done?'is-done':''}"><div><div class="expense-name">${safe(e.name)}</div><div class="expense-date">${e.day?`${String(e.day).padStart(2,'0')}/${String(state.month+1).padStart(2,'0')}`:'Data a definir'}${e.installmentTotal?` · Parcela ${e.installmentIndex}/${e.installmentTotal}`:''}</div>${e.done?'<div class="status-label">✓ Pago / concluído</div>':''}</div>
       <div class="expense-value">− ${money(e.amount)}</div><div class="expense-actions"><button class="btn-edit btn-small" data-edit-expense="${e.id}">Editar</button><button class="${e.done?'btn-soft':'btn-success'} btn-small" data-toggle-expense="${e.id}">${e.done?'Desmarcar':'Marcar pago'}</button><button class="btn-danger btn-small" data-delete-expense="${e.id}">Excluir</button></div></div>`).join('') : '<div class="empty">Nenhum gasto neste mês. Adicione o primeiro acima.</div>';
     $('pendingCount').textContent=`${state.pending.length} ${state.pending.length===1?'item':'itens'}`;
     $('pendingList').innerHTML=state.pending.length ? state.pending.map(p=>`
@@ -199,13 +199,13 @@
   });
   $('expenseForm').addEventListener('submit',e=>{
     e.preventDefault();
-    const name=$('expenseName').value.trim(),amount=parseMoney($('expenseAmount').value),raw=$('expenseDate').value.trim();
-    const match=raw.match(/^(\d{1,2})(?:\/(\d{1,2}))?$/);
+    const name=$('expenseName').value.trim(),amount=parseMoney($('expenseAmount').value),raw=$('expenseDate').value.trim(),dateTbd=$('expenseDateTbd').checked;
+    const match=dateTbd?null:raw.match(/^(\d{1,2})(?:\/(\d{1,2}))?$/);
     if(!name||!Number.isFinite(amount)||amount<=0){toast('Confira o nome e o valor do gasto.');return;}
-    if(!match){toast('Use a data no formato DD ou DD/MM.');return;}
-    const day=Number(match[1]),month=match[2]?Number(match[2]):state.month+1;
-    if(day<1||day>31||month<1||month>12){toast('Confira o dia e o mês.');return;}
-    if(month!==state.month+1){toast(`Você está vendo ${months[state.month]}. Escolha uma data desse mês.`);return;}
+    if(!dateTbd&&!match){toast('Use a data no formato DD ou DD/MM, ou marque Data a definir.');return;}
+    const day=dateTbd?null:Number(match[1]),month=dateTbd?state.month+1:(match[2]?Number(match[2]):state.month+1);
+    if(!dateTbd&&(day<1||day>31||month<1||month>12)){toast('Confira o dia e o mês.');return;}
+    if(!dateTbd&&month!==state.month+1){toast(`Você está vendo ${months[state.month]}. Escolha uma data desse mês.`);return;}
     const totalAmount=roundMoney(amount), installmentsOn=$('installmentEnabled').checked;
     const count=installmentsOn?Number($('installmentCount').value):1;
     if(installmentsOn&&(!Number.isInteger(count)||count<2||count>36)){toast('Escolha de 2 a 36 parcelas.');return;}
@@ -213,15 +213,15 @@
     for(let i=0;i<count;i++){
       const offset=shiftMonth(state.year,state.month,i), target=monthDataFor(offset.year,offset.month);
       const installmentAmount=(baseCents+(i<remainder?1:0))/100;
-      const validDay=Math.min(day,new Date(offset.year,offset.month+1,0).getDate());
+      const validDay=day===null?null:Math.min(day,new Date(offset.year,offset.month+1,0).getDate());
       target.expenses.push({id:uid(),name:installmentsOn?`${name} (parcela ${i+1}/${count})`:name,amount:installmentAmount,day:validDay,done:false,...(installmentsOn?{installmentGroup:groupId,installmentIndex:i+1,installmentTotal:count}: {})});
     }
-    persist();render();e.target.reset();$('installmentCount').value='2';$('installmentCountWrap').style.display='none';$('installmentHint').textContent='Ao ativar, o valor informado será dividido em parcelas mensais.';$('expenseName').focus();toast(installmentsOn?`Compra dividida em ${count} parcelas mensais.`:'Gasto adicionado!');
+    persist();render();e.target.reset();$('expenseDate').disabled=false;$('expenseDateTbd').checked=false;$('installmentCount').value='2';$('installmentCountWrap').style.display='none';$('installmentHint').textContent='Ao ativar, o valor informado será dividido em parcelas mensais.';$('expenseName').focus();toast(installmentsOn?`Compra dividida em ${count} parcelas mensais.`:'Gasto adicionado!');
   });
   $('pendingForm').addEventListener('submit',e=>{
-    e.preventDefault();const name=$('pendingName').value.trim(),amount=parseMoney($('pendingAmount').value),when=$('pendingWhen').value.trim();
+    e.preventDefault();const name=$('pendingName').value.trim(),amount=parseMoney($('pendingAmount').value),when=$('pendingDateTbd').checked?'Data a definir':$('pendingWhen').value.trim();
     if(!name||!when||!Number.isFinite(amount)||amount<=0){toast('Preencha a pendência com um valor válido.');return;}
-    state.pending.push({id:uid(),name,amount:Math.round(amount*100)/100,when});persist();render();e.target.reset();toast('Pendência adicionada!');
+    state.pending.push({id:uid(),name,amount:Math.round(amount*100)/100,when});persist();render();e.target.reset();$('pendingWhen').disabled=false;$('pendingDateTbd').checked=false;toast('Pendência adicionada!');
   });
   document.addEventListener('click',e=>{
     const exp=e.target.closest('[data-delete-expense]'), pen=e.target.closest('[data-delete-pending]');
@@ -253,6 +253,8 @@
   $('installmentEnabled').addEventListener('change',()=>{const on=$('installmentEnabled').checked;$('installmentCountWrap').style.display=on?'block':'none';$('installmentHint').textContent=on?'O valor total será dividido em parcelas. A primeira fica neste mês e as próximas nos meses seguintes.':'Ao ativar, o valor informado será dividido em parcelas mensais.';});
   $('expenseAmount').addEventListener('input',()=>{const val=parseMoney($('expenseAmount').value),count=Number($('installmentCount').value);if($('installmentEnabled').checked&&Number.isFinite(val)&&val>0&&Number.isInteger(count)&&count>=2&&count<=36){$('installmentHint').textContent=`Aproximadamente ${money(val/count)} por parcela (${count}x); a diferença de centavos será distribuída automaticamente.`;}});
   $('expenseDate').addEventListener('input',e=>{let v=e.target.value.replace(/[^\d/]/g,'');if(/^\d{2}$/.test(v))v+='/';e.target.value=v.slice(0,5);});
+  $('expenseDateTbd').addEventListener('change',()=>{const on=$('expenseDateTbd').checked;$('expenseDate').disabled=on;if(on)$('expenseDate').value='';});
+  $('pendingDateTbd').addEventListener('change',()=>{const on=$('pendingDateTbd').checked;$('pendingWhen').disabled=on;if(on)$('pendingWhen').value='';else $('pendingWhen').focus();});
   render();
 })();
 </script>
