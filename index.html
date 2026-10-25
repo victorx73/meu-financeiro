@@ -321,6 +321,7 @@ label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bot
   <section class="card">
     <div class="card-head"><div><h2>Novo empréstimo</h2><p>Registre os detalhes para não esquecer.</p></div></div>
     <div class="card-body">
+      <p class="section-note">Ao registrar um empréstimo, o valor sai do seu saldo disponível do mês. Ao registrar uma devolução, o valor volta ao saldo.</p>
       <form id="loanForm">
         <input type="hidden" id="loanEditId">
         <div class="form-grid">
@@ -447,10 +448,6 @@ function parseMoney(value){
 function safe(value){
   return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function todayISO(){
-  const d=new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
 function formatDate(date){
   if(!date)return 'Data não informada';
   const d=new Date(date+'T12:00:00');
@@ -505,7 +502,14 @@ function loadState(){
     if(!Number.isInteger(parsed.year))parsed.year=now.getFullYear();
     Object.keys(parsed.monthsData).forEach(k=>parsed.monthsData[k]=ensureMonth(parsed.monthsData[k]));
     parsed.pending.forEach(p=>{if(!p.id)p.id=uid();p.amount=Number(p.amount)||0;p.done=Boolean(p.done);});
-    parsed.loans.forEach(l=>{if(!l.id)l.id=uid();l.amount=Number(l.amount)||0;l.returned=Number(l.returned)||0;});
+    parsed.loans.forEach(l=>{
+      if(!l.id)l.id=uid();
+      l.amount=Number(l.amount)||0;
+      l.returned=Number(l.returned)||0;
+      if(!Number.isInteger(l.originMonth))l.originMonth=now.getMonth();
+      if(!Number.isInteger(l.originYear))l.originYear=now.getFullYear();
+      if(typeof l.withdrawn!=='boolean')l.withdrawn=false;
+    });
     return parsed;
   }catch(error){
     console.error('Não foi possível ler os dados salvos:',error);
@@ -563,6 +567,30 @@ function loanTotals(){
     due:round(state.loans.reduce((s,l)=>s+loanDue(l),0))
   };
 }
+
+/* ===== Ajuste de saldo para empréstimos =====
+   Quando um empréstimo é registrado, o valor sai do saldo do mês de origem.
+   Quando há devolução, o valor devolvido volta ao saldo do mês de origem.
+   Ao excluir o empréstimo, o valor em aberto volta ao saldo de origem.
+   Ao editar o valor emprestado, a diferença é ajustada no saldo de origem.
+*/
+function loanBalanceAdjust(l, delta){
+  const key = monthKey(l.originYear, l.originMonth);
+  if(!state.monthsData[key])state.monthsData[key]=ensureMonth({balance:0,expenses:[],dailyRate:0,incomeSource:'',workDays:[]});
+  state.monthsData[key].balance = round((Number(state.monthsData[key].balance)||0) + delta);
+}
+function withdrawLoanFromBalance(l){
+  if(l.withdrawn)return;
+  loanBalanceAdjust(l, -Number(l.amount||0));
+  l.withdrawn = true;
+}
+function restoreLoanToBalance(l){
+  if(!l.withdrawn)return;
+  const back = round(Number(l.amount||0) - loanReturned(l));
+  loanBalanceAdjust(l, back);
+  l.withdrawn = false;
+}
+
 function moveView(id){
   if(!NAV.some(n=>n.id===id))return;
   activeView=id;
@@ -871,7 +899,6 @@ $('expenseForm').addEventListener('submit',e=>{
 
   const count=$('installmentEnabled').checked?Number($('installmentCount').value):1;
   if(!Number.isInteger(count)||count<1||count>36){notify('Escolha uma quantidade válida de parcelas.');return;}
-  if(count>1&&count<2){notify('Use pelo menos duas parcelas.');return;}
 
   const cents=Math.round(round(amount)*100),base=Math.floor(cents/count),remainder=cents%count;
   const group=count>1?uid():null;
@@ -966,12 +993,31 @@ $('loanForm').addEventListener('submit',e=>{
   if(id){
     const item=state.loans.find(l=>l.id===id);if(!item)return;
     if(amount<loanReturned(item)){notify('O valor total não pode ser menor que o valor já devolvido.');return;}
+    const oldAmount=Number(item.amount)||0;
+    const diff=round(amount-oldAmount);
     item.person=person;item.amount=round(amount);item.date=date;item.note=note;
+    if(item.withdrawn && diff!==0){
+      loanBalanceAdjust(item, -diff);
+    }
     saveAndRender('Empréstimo atualizado.');cancelEdit('loan');render();return;
   }
 
-  state.loans.push({id:uid(),person,amount:round(amount),returned:0,date,note,createdAt:Date.now()});
-  saveAndRender('Empréstimo registrado.');cancelEdit('loan');render();
+  const loan={
+    id:uid(),
+    person,
+    amount:round(amount),
+    returned:0,
+    date,
+    note,
+    createdAt:Date.now(),
+    originYear:state.year,
+    originMonth:state.month,
+    withdrawn:false
+  };
+  state.loans.push(loan);
+  withdrawLoanFromBalance(loan);
+  saveAndRender('Empréstimo registrado. Valor descontado do saldo.');
+  cancelEdit('loan');render();
 });
 $('cancelLoanEdit').addEventListener('click',()=>{cancelEdit('loan');render();});
 $('loanFilter').addEventListener('change',renderLoans);
@@ -989,7 +1035,8 @@ $('loanList').addEventListener('click',e=>{
     const amount=parseMoney(answer);
     if(!Number.isFinite(amount)||amount<=0||amount>due+0.001){notify('Informe um valor positivo até o valor que falta receber.');return;}
     l.returned=round(loanReturned(l)+amount);
-    saveAndRender(loanDue(l)<=0?'Empréstimo quitado!':'Devolução registrada.');
+    if(l.withdrawn) loanBalanceAdjust(l, amount);
+    saveAndRender(loanDue(l)<=0?'Empréstimo quitado! Valor devolvido ao saldo.':'Devolução registrada. Valor devolvido ao saldo.');
     return;
   }
   if(edit){
@@ -1007,9 +1054,10 @@ $('loanList').addEventListener('click',e=>{
   }
   if(del){
     const l=state.loans.find(x=>x.id===del.dataset.loanDelete);if(!l)return;
-    if(!confirm(`Excluir o empréstimo registrado para ${l.person}?`))return;
+    if(!confirm(`Excluir o empréstimo registrado para ${l.person}? O valor em aberto voltará ao saldo.`))return;
+    restoreLoanToBalance(l);
     state.loans=state.loans.filter(x=>x.id!==l.id);
-    saveAndRender('Empréstimo excluído.');
+    saveAndRender('Empréstimo excluído. Valor em aberto devolvido ao saldo.');
   }
 });
 
