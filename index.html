@@ -169,7 +169,18 @@ label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bot
 .saved-chip button{border:0;background:transparent;color:var(--red);font-size:14px;line-height:1;padding:0 0 0 2px;cursor:pointer}
 .saved-chip button:hover{color:#ff9aab}
 
-/* Relatório por categoria */
+/* Relatório por categoria (recolhível) */
+.report-card .card-head{cursor:pointer;user-select:none}
+.report-card .card-head:hover h2{color:var(--blue)}
+.report-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.report-chevron{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--panel2);color:var(--blue);font-size:12px;font-weight:800;transition:transform .2s ease;flex-shrink:0}
+.report-card.collapsed .report-chevron{transform:rotate(-90deg)}
+.report-card.collapsed .report-list{display:none}
+.report-card.collapsed .report-summary{display:block}
+.report-summary{display:none;padding:14px 20px;color:var(--muted);font-size:12px;line-height:1.6}
+.report-summary strong{color:var(--text)}
+.report-summary .report-mini-total{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.report-summary .report-mini-total span:last-child{color:var(--red);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
 .report-list{padding:4px 20px 18px}
 .report-row{padding:13px 0;border-bottom:1px solid var(--line)}
 .report-row:last-child{border-bottom:0}
@@ -243,6 +254,7 @@ label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bot
  .form-grid.three{grid-template-columns:1fr 1fr}
  .form-grid.three .name-field{grid-column:1/-1}
  .report-list{padding:4px 16px 16px}
+ .report-summary{padding:12px 16px}
 }
 </style>
 </head>
@@ -325,8 +337,18 @@ label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bot
     <div class="metric"><div class="metric-label">Saldo restante</div><div class="metric-value" id="expRemaining">R$ 0,00</div><div class="metric-foot">Disponível menos gastos em aberto</div></div>
   </div>
 
-  <section class="card" style="margin-bottom:18px">
-    <div class="card-head"><div><h2>Relatório por categoria</h2><p>Quanto você gastou em cada tipo de gasto neste mês.</p></div><span class="badge" id="reportCountBadge">0 categorias</span></div>
+  <section class="card report-card" id="reportCard" style="margin-bottom:18px">
+    <div class="card-head" id="reportToggle" role="button" tabindex="0" aria-expanded="true" aria-controls="reportList">
+      <div class="report-title-row">
+        <span class="report-chevron" aria-hidden="true">▾</span>
+        <div>
+          <h2>Relatório por categoria</h2>
+          <p>Quanto você gastou em cada tipo de gasto neste mês.</p>
+        </div>
+      </div>
+      <span class="badge" id="reportCountBadge">0 categorias</span>
+    </div>
+    <div class="report-summary" id="reportSummary"></div>
     <div class="report-list" id="reportList"></div>
   </section>
 
@@ -506,6 +528,7 @@ label{display:block;color:var(--muted);font-size:12px;font-weight:650;margin-bot
 'use strict';
 
 const STORAGE_KEY = 'meuFinanceiro.v2';
+const REPORT_COLLAPSED_KEY = 'meuFinanceiro.reportCollapsed';
 const MONTHS = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 const NAV = [
   {id:'dashboard',label:'Visão geral',icon:'⌂'},
@@ -550,6 +573,22 @@ function categoryLabel(name){
   return String(name||'').replace(/\s*\(parcela\s+\d+\/\d+\)\s*$/i,'').trim();
 }
 
+/* ===== Estado de colapso do relatório ===== */
+let reportCollapsed = false;
+try{ reportCollapsed = localStorage.getItem(REPORT_COLLAPSED_KEY)==='1'; }catch(e){}
+function applyReportCollapsed(){
+  const card=$('reportCard');
+  const toggle=$('reportToggle');
+  card.classList.toggle('collapsed',reportCollapsed);
+  toggle.setAttribute('aria-expanded',String(!reportCollapsed));
+}
+function setReportCollapsed(v){
+  reportCollapsed=!!v;
+  try{ localStorage.setItem(REPORT_COLLAPSED_KEY, reportCollapsed?'1':'0'); }catch(e){}
+  applyReportCollapsed();
+  renderReportSummary();
+}
+
 const now=new Date();
 const initial={
   month:now.getMonth(),
@@ -574,7 +613,6 @@ function ensureMonth(data){
     e.amount=Number(e.amount)||0;
     if(e.day===undefined)e.day=null;
   });
-  /* garante que paidDays só contenha dias válidos e que paidDays ⊆ workDays */
   data.workDays=[...new Set(data.workDays.map(Number).filter(n=>Number.isInteger(n)&&n>=1&&n<=31))].sort((a,b)=>a-b);
   data.paidDays=[...new Set(data.paidDays.map(Number).filter(n=>Number.isInteger(n)&&n>=1&&n<=31))].sort((a,b)=>a-b);
   data.paidDays=data.paidDays.filter(d=>data.workDays.includes(d));
@@ -686,6 +724,19 @@ function categoryReport(data=monthData()){
   const total=round(list.reduce((s,x)=>s+x.total,0));
   return {list,total};
 }
+function renderReportSummary(){
+  const {list,total}=categoryReport();
+  const sum=$('reportSummary');
+  if(!list.length){
+    sum.innerHTML='<div>Nenhum gasto neste mês.</div>';
+    return;
+  }
+  const top=list[0];
+  sum.innerHTML=`<div class="report-mini-total">
+      <span><strong>${list.length}</strong> ${list.length===1?'categoria':'categorias'} · maior: <strong>${safe(top.label)}</strong></span>
+      <span>${money(total)}</span>
+    </div>`;
+}
 function renderCategoryReport(){
   const {list,total}=categoryReport();
   const badge=$('reportCountBadge');
@@ -693,6 +744,7 @@ function renderCategoryReport(){
   const wrap=$('reportList');
   if(!list.length){
     wrap.innerHTML='<div class="empty">Nenhum gasto cadastrado neste mês. Cadastre um gasto para ver o relatório por categoria.</div>';
+    renderReportSummary();
     return;
   }
   const max=Math.max(...list.map(x=>x.total),1);
@@ -716,6 +768,8 @@ function renderCategoryReport(){
         <span class="report-value" style="color:var(--text)">${money(total)}</span>
       </div>
     </div>`;
+  renderReportSummary();
+  applyReportCollapsed();
 }
 
 /* ===== Ajuste de saldo para empréstimos ===== */
@@ -1052,6 +1106,12 @@ function saveAndRender(message){
   persist();render();if(message)notify(message);
 }
 
+/* Colapso do relatório */
+$('reportToggle').addEventListener('click',()=>setReportCollapsed(!reportCollapsed));
+$('reportToggle').addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();setReportCollapsed(!reportCollapsed);}
+});
+
 /* Popover de status do dia */
 let popoverDay=null;
 function showDayPopover(day,anchor){
@@ -1064,7 +1124,6 @@ function showDayPopover(day,anchor){
   pop.querySelector('[data-day-action="paid"]').textContent=(paid?'✓ ':'')+'Marcar como pago';
   popoverDay=day;
   pop.classList.add('show');
-  /* posiciona próximo ao botão */
   const r=anchor.getBoundingClientRect();
   const pw=pop.offsetWidth||200, ph=pop.offsetHeight||150;
   let left=r.left+r.width/2-pw/2;
@@ -1085,7 +1144,6 @@ $('dayPopover').addEventListener('click',e=>{
   const d=monthData(),day=popoverDay;
   if(action==='worked'){
     if(d.workDays.includes(day)){
-      /* desmarcar trabalhado também remove o pago */
       d.workDays=d.workDays.filter(x=>x!==day);
       d.paidDays=d.paidDays.filter(x=>x!==day);
     }else{
@@ -1473,6 +1531,7 @@ window.addEventListener('scroll',hideDayPopover,{passive:true});
 window.addEventListener('resize',hideDayPopover);
 
 /* Inicialização */
+applyReportCollapsed();
 render();
 })();
 </script>
