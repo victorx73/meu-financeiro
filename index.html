@@ -1,329 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#10131a">
-<title>Meu Financeiro</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Controle financeiro pessoal simples e minimalista.">
+  <title>Meu Financeiro</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app">
-<header class="topbar">
-  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
-  <div class="brand">
-    <div class="brand-icon">₿</div>
-    <div><div class="brand-name">Meu Financeiro</div><div class="brand-caption">Controle financeiro pessoal</div></div>
-  </div>
-  <nav class="topnav" id="topNav" aria-label="Navegação principal"></nav>
-  <div class="top-actions">
-    <div class="month-picker">
-      <select id="monthSelect" aria-label="Mês"></select>
-      <select id="yearSelect" aria-label="Ano"></select>
-    </div>
-  </div>
-</header>
+  <div class="app">
+    <header>
+      <div class="brand">Meu Financeiro</div>
+      <label class="month-picker">
+        <span class="sr-only">Mês</span>
+        <select id="monthSelect" aria-label="Selecionar mês"></select>
+      </label>
+    </header>
 
-<div class="overlay" id="overlay"></div>
-<aside class="drawer" id="drawer" aria-label="Menu de navegação">
-  <div class="drawer-brand">
-    <div class="brand-icon">₿</div>
-    <div><div class="brand-name">Meu Financeiro</div><div class="brand-caption">Menu principal</div></div>
-  </div>
-  <nav id="drawerNav"></nav>
-</aside>
-
-<main class="page">
-<section class="view active" id="view-dashboard">
-  <div class="page-heading">
-    <div><h1>Visão geral</h1><p>Resumo da sua vida financeira em um só lugar.</p></div>
-  </div>
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Dinheiro disponível</div><div class="metric-value green" id="dashBalance">R$ 0,00</div><div class="metric-foot">Saldo inicial do mês</div></div>
-    <div class="metric"><div class="metric-label">Gastos em aberto</div><div class="metric-value red" id="dashExpenses">R$ 0,00</div><div class="metric-foot" id="dashExpenseCount">0 lançamentos pendentes</div></div>
-    <div class="metric"><div class="metric-label">Saldo restante</div><div class="metric-value" id="dashRemaining">R$ 0,00</div><div class="metric-foot">Disponível menos gastos não pagos</div></div>
-    <div class="metric"><div class="metric-label">Saldo projetado</div><div class="metric-value blue" id="dashProjected">R$ 0,00</div><div class="metric-foot">Inclui a previsão de ganhos</div></div>
-  </div>
-  <div class="content-grid">
-    <div class="stack">
-      <section class="card">
-        <div class="card-head"><div><h2>Últimos gastos</h2><p>Resumo dos lançamentos deste mês.</p></div><button class="btn btn-soft btn-sm" data-go="expenses">Ver todos</button></div>
-        <div id="dashboardExpenses" class="item-list"></div>
-      </section>
-      <section class="card">
-        <div class="card-head"><div><h2>Empréstimos a receber</h2><p>Dinheiro que outras pessoas ainda precisam devolver.</p></div><button class="btn btn-soft btn-sm" data-go="loans">Ver empréstimos</button></div>
-        <div class="card-body" id="dashboardLoans"></div>
-      </section>
-    </div>
-    <div class="stack">
-      <section class="card">
-        <div class="card-head"><div><h2>Acesso rápido</h2><p>Vá direto à funcionalidade desejada.</p></div></div>
-        <div class="card-body"><div class="quick-links">
-          <button class="quick-link" data-go="expenses"><span class="quick-icon">↗</span><span><strong>Gastos</strong><small>Despesas e parcelas</small></span></button>
-          <button class="quick-link" data-go="loans"><span class="quick-icon">⇄</span><span><strong>Empréstimos</strong><small>Valores a receber</small></span></button>
-          <button class="quick-link" data-go="income"><span class="quick-icon">▦</span><span><strong>Ganhos</strong><small>Diárias e calendário</small></span></button>
-          <button class="quick-link" data-go="pending"><span class="quick-icon">◷</span><span><strong>Pendências</strong><small>Compromissos futuros</small></span></button>
-        </div></div>
-      </section>
-      <section class="card">
-        <div class="card-head"><div><h2>Previsão de ganhos</h2><p>Estimativa do mês selecionado.</p></div></div>
-        <div class="card-body">
-          <div class="metric-label">Receita prevista</div><div class="metric-value green" id="dashForecast">R$ 0,00</div>
-          <div class="metric-foot" id="dashWorkDays">0 dias selecionados no calendário</div>
-          <div style="margin-top:15px"><button class="btn btn-soft" data-go="income">Abrir simulador</button></div>
-        </div>
-      </section>
-    </div>
-  </div>
-</section>
-
-<section class="view" id="view-expenses">
-  <div class="page-heading"><div><h1>Gastos</h1><p>Gerencie despesas, pagamentos e compras parceladas.</p></div></div>
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Dinheiro disponível</div><div class="metric-value green" id="expBalance">R$ 0,00</div><div class="metric-foot">Saldo inicial e ajustes</div></div>
-    <div class="metric"><div class="metric-label">Gastos em aberto</div><div class="metric-value red" id="expOpen">R$ 0,00</div><div class="metric-foot">Despesas não pagas</div></div>
-    <div class="metric"><div class="metric-label">Já pagos</div><div class="metric-value green" id="expPaid">R$ 0,00</div><div class="metric-foot">Total de despesas concluídas</div></div>
-    <div class="metric"><div class="metric-label">Saldo restante</div><div class="metric-value" id="expRemaining">R$ 0,00</div><div class="metric-foot">Disponível menos gastos em aberto</div></div>
-  </div>
-
-  <section class="card report-card" id="reportCard" style="margin-bottom:18px">
-    <div class="card-head" id="reportToggle" role="button" tabindex="0" aria-expanded="true" aria-controls="reportList">
-      <div class="report-title-row">
-        <span class="report-chevron" aria-hidden="true">▾</span>
-        <div><h2>Relatório por categoria</h2><p>Quanto você gastou em cada tipo de gasto neste mês.</p></div>
-      </div>
-      <span class="badge" id="reportCountBadge">0 categorias</span>
-    </div>
-    <div class="report-summary" id="reportSummary"></div>
-    <div class="report-list" id="reportList"></div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><div><h2>Saldo do mês</h2><p>Atualize o valor disponível para este mês.</p></div></div>
-    <div class="balance-editor">
-      <label for="startingBalance">Dinheiro disponível (R$)</label>
-      <div class="balance-row"><input id="startingBalance" inputmode="decimal" placeholder="0,00"><button class="btn btn-primary" id="saveBalance">Salvar saldo</button></div>
-    </div>
-    <div class="form-card">
-      <h3 id="expenseFormTitle">Adicionar gasto</h3>
-      <form id="expenseForm">
-        <input type="hidden" id="expenseEditId">
-        <div class="form-grid three">
-          <div class="field name-field">
-            <label for="expenseName">Nome do gasto</label>
-            <div class="autocomplete-wrap">
-              <input id="expenseName" required maxlength="100" placeholder="Ex.: Conta de internet" autocomplete="off">
-              <div class="autocomplete-list" id="expenseNameList"></div>
-            </div>
+    <main>
+      <section class="overview">
+        <div class="section-head">
+          <div><p class="eyebrow">CONTROLE MENSAL</p><h1>Visão geral</h1></div>
+          <div style="display: flex; gap: 8px;">
+            <button id="toggleExtratoBtn" class="toggle-btn" type="button" aria-expanded="false" aria-controls="transactionSection">
+              + Extrato
+            </button>
+            <button id="toggleEmprestimoBtn" class="toggle-btn" type="button" aria-expanded="false" aria-controls="loanSection">
+              + Empréstimos
+            </button>
           </div>
-          <div class="field"><label for="expenseAmount">Valor total (R$)</label><input id="expenseAmount" required inputmode="decimal" placeholder="0,00"></div>
-          <div class="field"><label for="expenseDate">Data</label><input id="expenseDate" type="date"><label class="inline-check"><input id="expenseDateTbd" type="checkbox"> Data a definir</label></div>
         </div>
-        <div style="margin-top:15px;padding:13px;border:1px solid var(--line);border-radius:12px">
-          <label class="inline-check" style="margin-top:0;color:var(--text)"><input id="installmentEnabled" type="checkbox"> Parcelar esta compra</label>
-          <div id="installmentCountWrap" style="display:none;margin-top:13px;max-width:230px"><label for="installmentCount">Quantidade de parcelas</label><input id="installmentCount" type="number" min="2" max="36" value="2"></div>
-          <p id="installmentHint" class="section-note" style="margin:10px 0 0">Ao parcelar, a primeira parcela fica neste mês e as próximas nos meses seguintes.</p>
-        </div>
-        <div style="margin-top:15px;padding:13px;border:1px solid var(--line);border-radius:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-            <div><strong style="font-size:13px">Gastos salvos</strong><p class="section-note" style="margin:4px 0 0">Clique em um gasto salvo para preencher o nome. O valor você digita normalmente.</p></div>
-            <button type="button" class="btn btn-soft btn-sm" id="saveAsTemplate">+ Salvar nome do gasto</button>
+        <div class="summary">
+          <div class="metric">
+            <label>Disponível</label>
+            <input id="availableInput" value="R$ 0,00" readonly aria-label="Saldo disponível">
+            <span class="hint">Depósitos menos saques e gastos</span>
           </div>
-          <div id="savedList" class="saved-list" style="margin-top:12px"></div>
+          <div class="metric">
+            <label>Gastos</label>
+            <input id="spentOutput" value="R$ 0,00" readonly aria-label="Total de gastos" class="negative">
+            <span class="hint">Total cadastrado no mês</span>
+          </div>
+          <div class="metric">
+            <label>Saldo restante</label>
+            <input id="remainingOutput" value="R$ 0,00" readonly aria-label="Saldo restante" class="positive">
+            <span class="hint">Disponível menos gastos</span>
+          </div>
         </div>
-        <div class="form-actions"><button type="button" class="btn" id="cancelExpenseEdit" style="display:none">Cancelar</button><button class="btn btn-primary" id="expenseSubmit" type="submit">+ Adicionar gasto</button></div>
-      </form>
-    </div>
-    <div class="filters">
-      <div><label for="expenseStatusFilter">Status do pagamento</label><select id="expenseStatusFilter"><option value="unpaid-first">Não pagos primeiro</option><option value="all">Todos os gastos</option><option value="paid-first">Pagos primeiro</option><option value="unpaid">Somente não pagos</option><option value="paid">Somente pagos</option></select></div>
-      <div><label for="expenseDateSort">Ordenar por data</label><select id="expenseDateSort"><option value="asc">Mais antigos primeiro</option><option value="desc">Mais recentes primeiro</option></select></div>
-    </div>
-    <div class="card-head"><div><h2>Lançamentos</h2><p>Marque quando um gasto for pago.</p></div><span class="badge" id="expenseCountBadge">0 itens</span></div>
-    <div class="item-list" id="expenseList"></div>
-  </section>
-</section>
+      </section>
 
-<section class="view" id="view-loans">
-  <div class="page-heading"><div><h1>Empréstimos</h1><p>Saiba quem pegou dinheiro emprestado e quanto falta receber.</p></div></div>
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Total emprestado</div><div class="metric-value" id="loanTotal">R$ 0,00</div><div class="metric-foot">Valor original dos empréstimos</div></div>
-    <div class="metric"><div class="metric-label">Já devolvido</div><div class="metric-value green" id="loanReturned">R$ 0,00</div><div class="metric-foot">Devoluções registradas</div></div>
-    <div class="metric"><div class="metric-label">Falta receber</div><div class="metric-value blue" id="loanOutstanding">R$ 0,00</div><div class="metric-foot">Saldo em aberto</div></div>
-    <div class="metric"><div class="metric-label">Registros</div><div class="metric-value" id="loanCount">0</div><div class="metric-foot">Pessoas cadastradas</div></div>
+      <!-- SEÇÃO EXTRATO -->
+      <section id="transactionSection" class="section is-hidden" aria-labelledby="transactionsTitle">
+        <div class="section-head">
+          <div><p class="eyebrow">CONTA CORRENTE</p><h2 id="transactionsTitle">Extrato (Depósitos e Saques)</h2></div>
+        </div>
+        <form id="transactionForm" class="form-grid">
+          <input id="transactionName" type="text" placeholder="Descrição (ex: Depósito, Saque)" maxlength="80" required>
+          <input id="transactionAmount" type="text" inputmode="decimal" placeholder="Valor (R$)" required>
+          <select id="transactionType" aria-label="Tipo de movimentação" style="padding: 10px 11px;">
+            <option value="deposit">Depósito (Entrada)</option>
+            <option value="withdrawal">Saque (Saída)</option>
+          </select>
+          <input id="transactionDate" type="date" required>
+          <button class="button primary" type="submit">Adicionar</button>
+        </form>
+        <div class="table-head"><span>DESCRIÇÃO</span><span>DATA</span><span style="text-align:right">VALOR</span><span></span></div>
+        <div id="transactionList" aria-live="polite"></div>
+      </section>
+
+      <!-- SEÇÃO EMPRÉSTIMOS -->
+      <section id="loanSection" class="section is-hidden" aria-labelledby="loanTitle">
+        <div class="section-head">
+          <div><p class="eyebrow">CRÉDITO</p><h2 id="loanTitle">Empréstimos</h2></div>
+        </div>
+        <p class="future-note">Estes valores não são descontados do saldo do mês. Use a taxa para calcular o retorno.</p>
+        <form id="loanForm" class="loan-form">
+          <input id="loanName" type="text" placeholder="Nome do devedor" maxlength="80" required>
+          <input id="loanAmount" type="text" inputmode="decimal" placeholder="Valor emprestado (R$)" required>
+          <input id="loanRate" type="text" inputmode="decimal" placeholder="Taxa (%)" value="0">
+          <button class="button" type="submit">Adicionar empréstimo</button>
+        </form>
+        <div class="table-head"><span>DEVEDOR</span><span style="text-align:right">TAXA</span><span style="text-align:right">VALOR FINAL</span><span></span></div>
+        <div id="loanList" aria-live="polite"></div>
+      </section>
+
+      <section class="section" aria-labelledby="expensesTitle">
+        <div class="section-head">
+          <div><p class="eyebrow">MOVIMENTAÇÕES</p><h2 id="expensesTitle">Gastos</h2></div>
+        </div>
+        <form id="expenseForm" class="form-grid">
+          <input id="expenseName" type="text" placeholder="Nome do gasto" maxlength="80" required>
+          <input id="expenseAmount" type="text" inputmode="decimal" placeholder="Valor (R$)" required>
+          <input id="expenseDate" type="date" required>
+          <button class="button primary" type="submit">Adicionar gasto</button>
+        </form>
+        <div class="table-head"><span>DESCRIÇÃO</span><span>DATA</span><span style="text-align:right">VALOR</span><span></span></div>
+        <div id="expenseList" aria-live="polite"></div>
+      </section>
+
+      <section class="section" aria-labelledby="futureTitle">
+        <div class="section-head">
+          <div><p class="eyebrow">COMPROMISSOS</p><h2 id="futureTitle">Pendências futuras</h2></div>
+        </div>
+        <p class="future-note">Estes valores não são descontados do saldo do mês.</p>
+        <form id="futureForm" class="form-grid">
+          <input id="futureName" type="text" placeholder="Nome da pendência" maxlength="80" required>
+          <input id="futureAmount" type="text" inputmode="decimal" placeholder="Valor (R$)" required>
+          <input id="futureCondition" type="text" placeholder="Condição / vencimento" maxlength="60" required>
+          <button class="button" type="submit">Adicionar pendência</button>
+        </form>
+        <div id="futureList" aria-live="polite"></div>
+      </section>
+    </main>
+    <footer><span>Meu Financeiro</span><span>Seus dados ficam salvos neste navegador.</span></footer>
   </div>
-  <section class="card">
-    <div class="card-head"><div><h2>Novo empréstimo</h2><p>Registre os detalhes para não esquecer.</p></div></div>
-    <div class="card-body">
-      <p class="section-note">Ao registrar um empréstimo, o valor sai do seu saldo disponível do mês. Ao registrar uma devolução, o valor volta ao saldo.</p>
-      <form id="loanForm">
-        <input type="hidden" id="loanEditId">
-        <div class="form-grid">
-          <div class="field full"><label for="loanPerson">Nome da pessoa</label><input id="loanPerson" required maxlength="100" placeholder="Quem pegou o dinheiro?"></div>
-          <div class="field"><label for="loanAmount">Valor emprestado (R$)</label><input id="loanAmount" required inputmode="decimal" placeholder="100,00"></div>
-          <div class="field"><label for="loanDate">Data do empréstimo</label><input id="loanDate" type="date"></div>
-          <div class="field full"><label for="loanNote">Observação / data combinada</label><input id="loanNote" maxlength="180" placeholder="Ex.: devolver no dia 15"></div>
-        </div>
-        <div class="form-actions"><button type="button" class="btn" id="cancelLoanEdit" style="display:none">Cancelar</button><button type="submit" class="btn btn-primary" id="loanSubmit">+ Registrar empréstimo</button></div>
-      </form>
-    </div>
-    <div class="card-head"><div><h2>Seus empréstimos</h2><p>Registre devoluções totais ou parciais.</p></div><span class="badge" id="loanListCount">0 registros</span></div>
-    <div class="filters">
-      <div><label for="loanFilter">Filtrar</label><select id="loanFilter"><option value="open">Falta receber</option><option value="all">Todos</option><option value="paid">Quitados</option></select></div>
-      <div><label for="loanSort">Ordenar</label><select id="loanSort"><option value="recent">Mais recentes</option><option value="old">Mais antigos</option><option value="highest">Maior valor em aberto</option></select></div>
-    </div>
-    <div class="item-list" id="loanList"></div>
-  </section>
-</section>
-
-<section class="view" id="view-income">
-  <div class="page-heading"><div><h1>Ganhos</h1><p>Simule quanto pode receber com suas diárias e marque os dias pagos.</p></div></div>
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Valor da diária</div><div class="metric-value" id="incomeDaily">R$ 0,00</div><div class="metric-foot">Valor definido por dia</div></div>
-    <div class="metric"><div class="metric-label">Dias trabalhados</div><div class="metric-value" id="incomeDays">0</div><div class="metric-foot" id="incomeDaysFoot">0 pagos · 0 previstos</div></div>
-    <div class="metric"><div class="metric-label">Já recebido</div><div class="metric-value green" id="incomePaid">R$ 0,00</div><div class="metric-foot">Dias marcados como pagos</div></div>
-    <div class="metric"><div class="metric-label">Previsão restante</div><div class="metric-value blue" id="incomeForecast">R$ 0,00</div><div class="metric-foot">Dias trabalhados ainda não pagos</div></div>
-  </div>
-  <div class="content-grid">
-    <section class="card">
-      <div class="card-head"><div><h2>Calendário de trabalho</h2><p>Toque em um dia para marcar como trabalhado ou pago.</p></div><span class="badge" id="calendarDayCount">0 dias</span></div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="field"><label for="dailyRate">Valor da diária (R$)</label><input id="dailyRate" inputmode="decimal" placeholder="100,00"></div>
-          <div class="field"><label for="incomeSource">Fonte de renda (opcional)</label><input id="incomeSource" maxlength="80" placeholder="Trabalho, freela, Uber..."></div>
-        </div>
-        <div style="height:22px"></div>
-        <div class="calendar-header"><strong id="calendarMonthLabel">Calendário</strong><button type="button" class="btn btn-sm" id="clearDays">Limpar dias</button></div>
-        <div class="calendar" id="calendar"></div>
-        <div class="calendar-legend">
-          <span class="leg-item"><span class="dot dot-green"></span> Trabalhado (previsto)</span>
-          <span class="leg-item"><span class="dot dot-blue"></span> Pago (recebido)</span>
-        </div>
-        <div class="forecast-box">
-          <div class="forecast-row"><span>Fonte de renda</span><strong id="forecastSource">Não informada</strong></div>
-          <div class="forecast-row"><span>Dias trabalhados</span><strong id="forecastDaysText">0</strong></div>
-          <div class="forecast-row"><span>Dias pagos</span><strong id="forecastPaidDaysText" class="blue">0</strong></div>
-          <div class="forecast-row"><span>Valor da diária</span><strong id="forecastRateText">R$ 0,00</strong></div>
-          <div class="forecast-row"><span>Previsão total (todos)</span><strong id="forecastTotal">R$ 0,00</strong></div>
-          <div class="forecast-row blue-row"><span>Já recebido</span><strong id="forecastPaidTotal">R$ 0,00</strong></div>
-          <div class="forecast-row"><span>Ainda a receber</span><strong id="forecastRemaining">R$ 0,00</strong></div>
-        </div>
-      </div>
-    </section>
-    <section class="card">
-      <div class="card-head"><div><h2>Como está o mês?</h2><p>Resumo da projeção com seus ganhos.</p></div></div>
-      <div class="card-body">
-        <p class="section-note">A previsão de ganhos é uma estimativa. Marcar dias no calendário não altera o saldo disponível automaticamente.</p>
-        <div class="metric-label">Saldo inicial</div><div class="metric-value" id="incomeBalance">R$ 0,00</div>
-        <div style="height:18px"></div>
-        <div class="metric-label">Gastos em aberto</div><div class="metric-value red" id="incomeExpenses">R$ 0,00</div>
-        <div style="height:18px"></div>
-        <div class="metric-label">Saldo restante antes dos ganhos</div><div class="metric-value" id="incomeRemaining">R$ 0,00</div>
-        <div style="height:18px"></div>
-        <div class="metric-label">Saldo projetado (com ganhos)</div><div class="metric-value blue" id="incomeProjected">R$ 0,00</div>
-      </div>
-    </section>
-  </div>
-</section>
-
-<section class="view" id="view-pending">
-  <div class="page-heading"><div><h1>Pendências futuras</h1><p>Compromissos e valores previstos que não entram no saldo mensal.</p></div></div>
-  <div class="metrics">
-    <div class="metric"><div class="metric-label">Pendências abertas</div><div class="metric-value" id="pendingOpenCount">0</div><div class="metric-foot">Itens a resolver</div></div>
-    <div class="metric"><div class="metric-label">Valor em aberto</div><div class="metric-value blue" id="pendingOpenTotal">R$ 0,00</div><div class="metric-foot">Não descontado do saldo</div></div>
-    <div class="metric"><div class="metric-label">Concluídas</div><div class="metric-value green" id="pendingDoneCount">0</div><div class="metric-foot">Itens finalizados</div></div>
-    <div class="metric"><div class="metric-label">Valor total registrado</div><div class="metric-value" id="pendingTotal">R$ 0,00</div><div class="metric-foot">Abertas e concluídas</div></div>
-  </div>
-  <section class="card">
-    <div class="card-head"><div><h2>Adicionar pendência</h2><p>Descreva o compromisso e quando espera resolvê-lo.</p></div></div>
-    <div class="card-body">
-      <form id="pendingForm">
-        <input type="hidden" id="pendingEditId">
-        <div class="form-grid">
-          <div class="field full"><label for="pendingName">Nome da pendência</label><input id="pendingName" required maxlength="100" placeholder="Ex.: Compra planejada"></div>
-          <div class="field"><label for="pendingAmount">Valor (R$)</label><input id="pendingAmount" required inputmode="decimal" placeholder="0,00"></div>
-          <div class="field"><label for="pendingWhen">Data ou condição</label><input id="pendingWhen" maxlength="140" placeholder="Ex.: quando receber"></div>
-          <div class="field full"><label class="inline-check"><input id="pendingDateTbd" type="checkbox"> Data a definir</label></div>
-        </div>
-        <div class="form-actions"><button type="button" class="btn" id="cancelPendingEdit" style="display:none">Cancelar</button><button class="btn btn-primary" type="submit" id="pendingSubmit">+ Adicionar pendência</button></div>
-      </form>
-    </div>
-    <div class="card-head"><div><h2>Lista de pendências</h2><p>Conclua ou edite os itens quando necessário.</p></div><span class="badge" id="pendingCount">0 itens</span></div>
-    <div class="filters">
-      <div><label for="pendingFilter">Filtrar status</label><select id="pendingFilter"><option value="open">Em aberto primeiro</option><option value="all">Todas</option><option value="done">Somente concluídas</option></select></div>
-      <div><label for="pendingSort">Ordenar</label><select id="pendingSort"><option value="new">Mais recentes</option><option value="old">Mais antigas</option><option value="high">Maior valor</option></select></div>
-    </div>
-    <div class="item-list" id="pendingList"></div>
-  </section>
-</section>
-
-<section class="view" id="view-sync">
-  <div class="page-heading"><div><h1>Sincronização por pasta</h1><p>Salve seus dados numa pasta compartilhada (ex.: Syncthing) e sincronize entre seus dispositivos.</p></div></div>
-
-  <section class="card" style="margin-bottom:18px">
-    <div class="card-head"><div><h2>Pasta compartilhada</h2><p>Escolha uma pasta sincronizada pelo Syncthing (ou outro). O app grava e lê o arquivo <strong>meu-financeiro.json</strong> nela.</p></div></div>
-    <div class="card-body">
-      <div class="backup-grid">
-        <button class="backup-action" id="btnPickFolder">
-          <span class="b-icon">📁</span>
-          <strong>Escolher pasta</strong>
-          <small>Selecione a pasta compartilhada. O Chrome/Edge lembra da escolha.</small>
-        </button>
-        <button class="backup-action" id="btnSyncNow">
-          <span class="b-icon">🔄</span>
-          <strong>Sincronizar agora</strong>
-          <small>Compara o arquivo da pasta com os dados locais e aplica o mais recente.</small>
-        </button>
-        <button class="backup-action" id="btnSaveToFolder">
-          <span class="b-icon">💾</span>
-          <strong>Enviar para a pasta</strong>
-          <small>Grava o estado atual no arquivo da pasta, sobrescrevendo o anterior.</small>
-        </button>
-      </div>
-      <div class="backup-status" id="folderStatus"></div>
-      <p class="section-note" style="margin-top:14px">
-        <strong>Como funciona:</strong> o app mantém a data da última alteração local. Ao sincronizar, ele compara com a data do arquivo na pasta.
-        Se o arquivo da pasta for mais novo (outro dispositivo alterou), ele baixa. Se o local for mais novo, ele envia.
-        Se forem iguais, não faz nada. Se houver conflito (ambos alterados), o app cria uma cópia de segurança antes de sobrescrever.
-      </p>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><div><h2>Configuração</h2><p>Ajuste como a sincronização se comporta.</p></div></div>
-    <div class="card-body">
-      <div class="backup-setting">
-        <label for="syncMode" style="margin:0">Modo:</label>
-        <select id="syncMode">
-          <option value="manual">Manual (só quando eu clicar)</option>
-          <option value="on-open">Automático ao abrir o app</option>
-        </select>
-      </div>
-      <div class="backup-setting">
-        <label for="syncOnSave" style="margin:0">Enviar para a pasta ao alterar dados:</label>
-        <select id="syncOnSave">
-          <option value="off">Não (só manual)</option>
-          <option value="on">Sim (grava a cada alteração)</option>
-        </select>
-      </div>
-      <div class="form-actions" style="justify-content:flex-start;margin-top:14px">
-        <button class="btn btn-soft btn-sm" id="btnForgetFolder">Esquecer pasta escolhida</button>
-      </div>
-    </div>
-  </section>
-</section>
-</main>
-
-<nav class="mobile-bottom" id="mobileBottom" aria-label="Navegação rápida"></nav>
-</div>
-<div class="toast" id="toast" role="status"></div>
-
-<div class="day-popover" id="dayPopover" role="dialog" aria-label="Status do dia">
-  <div class="pop-title" id="dayPopoverTitle">Dia</div>
-  <button type="button" data-day-action="worked"><span class="pop-dot dot-green"></span> Marcar como trabalhado</button>
-  <button type="button" data-day-action="paid"><span class="pop-dot dot-blue"></span> Marcar como pago</button>
-  <button type="button" data-day-action="clear" class="danger">✕ Limpar dia</button>
-</div>
-
-<script src="app.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
