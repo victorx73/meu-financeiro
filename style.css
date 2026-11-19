@@ -14,21 +14,37 @@
   font-family: Inter, Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box; 
+  /* Evita que o Safari/iOS ou Android criem rolagem lateral por causa de margens */
+  max-width: 100%; 
+}
+
+html, body {
+  /* Trava a tela de rolar para os lados */
+  overflow-x: hidden;
+  width: 100%;
+  margin: 0; 
+  padding: 0;
+}
 
 body { 
-  margin: 0; 
   background: var(--bg); 
   color: var(--text); 
   font-size: 14px; 
   line-height: 1.5; 
   -webkit-font-smoothing: antialiased; 
+  /* Remove o zoom (double-tap) no mobile */
+  touch-action: manipulation; 
 }
 
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 
-.app { width: min(940px, calc(100% - 40px)); margin: 0 auto; }
+.app { 
+  width: min(940px, calc(100% - 40px)); 
+  margin: 0 auto; 
+}
 
 header { 
   min-height: 76px; 
@@ -50,6 +66,8 @@ select, input {
   border-radius: var(--radius); 
   padding: 10px 11px; 
   outline: none; 
+  width: 100%; /* Força ocupar 100% do container disponível */
+  max-width: 100%; /* Impede estourar */
 }
 
 select option {
@@ -58,7 +76,7 @@ select option {
 }
 
 select:focus, input:focus { border-color: #777; }
-.month-picker select { border: 0; padding: 8px 2px; font-size: 13px; }
+.month-picker select { border: 0; padding: 8px 2px; font-size: 13px; width: auto; }
 
 main { padding-bottom: 35px; }
 .overview { padding: 44px 0 38px; }
@@ -255,48 +273,62 @@ footer {
   .app { width: calc(100% - 32px); }
   header { min-height: 65px; }
   .overview { padding: 32px 0 28px; }
+  
   .summary { grid-template-columns: 1fr; }
   .metric { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 14px 0; }
   .metric + .metric { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
   .metric label { margin: 0; }
   .metric input { grid-column: 2; grid-row: 1 / span 2; text-align: right; font-size: 21px; max-width: 175px; }
   .metric .hint { margin: 0; }
+  
   .section { padding: 28px 0 30px; }
   .section-head { align-items: center; }
   
-  /* Ajuste no formulário para não vazar */
-  .form-grid { 
+  /* FORMULÁRIOS NO MOBILE */
+  .form-grid, .loan-form { 
     grid-template-columns: 1fr 1fr; 
     gap: 8px;
   }
-  .form-grid input, .form-grid select, .form-grid button { 
-    width: 100%;
-    min-width: 0;
-    font-size: 12px;
-  }
-  .form-grid input:first-child { grid-column: 1 / -1; }
-  .form-grid button { grid-column: 1 / -1; }
   
-  /* Ajuste nas tabelas/listas para não vazar */
-  .table-head, .expense-row, .transaction-row, .future-row { 
-    grid-template-columns: minmax(0, 1fr) 55px 75px 24px; 
-    gap: 5px; 
+  /* Força qualquer input/select/botão a não estourar a tela */
+  .form-grid input, .form-grid select, .form-grid button,
+  .loan-form input, .loan-form select, .loan-form button { 
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0; /* Fundamental para o flex/grid não estourar */
+    font-size: 13px;
+    padding: 10px 8px; /* Diminui um pouco o padding nas laterais */
   }
+  
+  /* O primeiro input ocupa a linha toda */
+  .form-grid input:first-child, .loan-form input:first-child { grid-column: 1 / -1; }
+  
+  /* O botão também ocupa a linha toda */
+  .form-grid button, .loan-form button { grid-column: 1 / -1; }
+  
+  /* AJUSTE DAS LISTAS (Tabelas) NO MOBILE */
+  .table-head, .expense-row, .transaction-row, .future-row, .loan-row { 
+    /* Colunas: Nome (flexível), Data/Taxa (fixa), Valor (fixa), Botão (fixa) */
+    grid-template-columns: minmax(0, 1fr) 65px 70px 24px; 
+    gap: 6px; 
+  }
+  
   .table-head { font-size: 9px; }
-  .expense-name, .expense-value, .transaction-name, .transaction-value, .future-name, .future-value { 
-    font-size: 11px; 
+  
+  .expense-name, .transaction-name, .future-name, .loan-name { 
+    font-size: 12px; 
     overflow-wrap: anywhere;
   }
-  .expense-date, .transaction-date, .future-condition { 
-    font-size: 10px; 
+  
+  .expense-value, .transaction-value, .future-value, .loan-value { 
+    font-size: 12px; 
+    white-space: nowrap; /* Evita quebrar o valor em duas linhas */
   }
   
-  .loan-form { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .loan-form input, .loan-form button { width: 100%; min-width: 0; font-size: 12px; }
-  .loan-form input:first-child { grid-column: 1 / -1; }
-  .loan-form button { grid-column: 1 / -1; }
-  .loan-row { grid-template-columns: minmax(0, 1fr) 50px 65px 24px; gap: 5px; font-size: 11px; }
-  .loan-rate { font-size: 9px; }
+  .expense-date, .transaction-date, .future-condition, .loan-rate { 
+    font-size: 10px; 
+    white-space: nowrap;
+  }
   
   footer { flex-direction: column; }
 }
