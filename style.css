@@ -176,7 +176,7 @@ input[type="date"] { color-scheme: dark; }
   border-bottom: 1px solid var(--line); 
 }
 .future-name { overflow-wrap: anywhere; }
-.future-condition { color: var(--muted); font-size: 12px; }
+.future-condition { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 .future-value { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* Extrato Bancário */
@@ -204,9 +204,10 @@ input[type="date"] { color-scheme: dark; }
 .loan-name { overflow-wrap: anywhere; }
 .loan-rate { color: var(--muted); font-size: 11px; }
 .loan-value { text-align: right; font-variant-numeric: tabular-nums; }
-.loan-form { 
+
+.loan-form, .future-form { 
   display: grid; 
-  grid-template-columns: minmax(120px, 1.2fr) minmax(90px, .8fr) minmax(70px, .5fr) auto; 
+  grid-template-columns: minmax(120px, 1.2fr) minmax(90px, .8fr) minmax(100px, .9fr) auto; 
   gap: 9px; 
   margin: 18px 0 20px; 
 }
@@ -265,15 +266,19 @@ footer {
   .form-grid { grid-template-columns: 1fr 1fr; }
   .form-grid input:first-child { grid-column: 1 / -1; }
   .form-grid button { grid-column: 1 / -1; }
+  
   .table-head, .expense-row, .transaction-row { grid-template-columns: minmax(0, 1fr) 60px 88px 28px; gap: 7px; }
   .table-head { font-size: 9px; }
   .expense-name, .expense-value, .transaction-name, .transaction-value { font-size: 12px; }
   .expense-date, .transaction-date { font-size: 10px; }
-  .future-row { grid-template-columns: minmax(0, 1fr) 82px 78px 26px; gap: 6px; font-size: 12px; }
+  
+  .future-row { grid-template-columns: minmax(0, 1fr) 70px 80px 26px; gap: 6px; font-size: 12px; }
   .future-condition { font-size: 10px; }
-  .loan-form { grid-template-columns: 1fr 1fr; }
-  .loan-form input:first-child { grid-column: 1 / -1; }
-  .loan-form button { grid-column: 1 / -1; }
+  
+  .loan-form, .future-form { grid-template-columns: 1fr 1fr; }
+  .loan-form input:first-child, .future-form input:first-child { grid-column: 1 / -1; }
+  .loan-form button, .future-form button { grid-column: 1 / -1; }
+  
   .loan-row { grid-template-columns: minmax(0, 1fr) 60px 78px 26px; gap: 6px; font-size: 12px; }
   .loan-rate { font-size: 9px; }
   footer { flex-direction: column; }
