@@ -90,12 +90,22 @@
           <div><p class="eyebrow">MOVIMENTAÇÕES</p><h2 id="expensesTitle">Gastos</h2></div>
         </div>
         <form id="expenseForm" class="form-grid">
+          <input type="hidden" id="expenseIdEdit" value="">
           <input id="expenseName" type="text" placeholder="Nome do gasto" maxlength="80" required>
           <input id="expenseAmount" type="text" inputmode="decimal" placeholder="Valor (R$)" required>
           <input id="expenseDate" type="date" required>
-          <button class="button primary" type="submit">Adicionar gasto</button>
+          <div style="display: flex; gap: 9px;">
+            <button class="button primary" type="submit" id="expenseSubmitBtn" style="flex: 1;">Adicionar</button>
+            <button class="button danger is-hidden" type="button" id="expenseCancelBtn" style="padding: 9px 15px;">×</button>
+          </div>
         </form>
-        <div class="table-head"><span>DESCRIÇÃO</span><span>DATA</span><span style="text-align:right">VALOR</span><span></span></div>
+        <div class="table-head">
+          <span></span>
+          <span>DESCRIÇÃO</span>
+          <span>DATA</span>
+          <span style="text-align:right">VALOR</span>
+          <span></span>
+        </div>
         <div id="expenseList" aria-live="polite"></div>
       </section>
 
@@ -110,6 +120,12 @@
           <input id="futureCondition" type="text" placeholder="Condição / vencimento" maxlength="60" required>
           <button class="button" type="submit">Adicionar pendência</button>
         </form>
+        <div class="table-head">
+          <span>DESCRIÇÃO</span>
+          <span>CONDIÇÃO</span>
+          <span style="text-align:right">VALOR</span>
+          <span></span>
+        </div>
         <div id="futureList" aria-live="polite"></div>
       </section>
     </main>

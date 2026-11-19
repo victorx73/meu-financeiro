@@ -14,10 +14,24 @@
   const toggleEmprestimoBtn = $("toggleEmprestimoBtn");
   const loanSection = $("loanSection");
 
+  // Elementos de Edição de Gasto
+  const expenseIdEdit = $("expenseIdEdit");
+  const expenseSubmitBtn = $("expenseSubmitBtn");
+  const expenseCancelBtn = $("expenseCancelBtn");
+
   function currentMonthKey() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }
+
+  function getTodayDate() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
   function emptyMonth() {
     return { transactions: [], expenses: [], future: [], loans: [] };
   }
@@ -29,12 +43,12 @@
       const data = JSON.parse(raw);
       return {
         transactions: Array.isArray(data.transactions) ? data.transactions : [],
-        expenses: Array.isArray(data.expenses) ? data.expenses : [],
+        expenses: Array.isArray(data.expenses) ? data.expenses.map(e => ({ ...e, done: !!e.done })) : [],
         future: Array.isArray(data.future) ? data.future : [],
         loans: Array.isArray(data.loans) ? data.loans : []
       };
     } catch (error) {
-      console.error("Não foi possível carregar os dados deste mês:", error);
+      console.error("Erro ao carregar:", error);
       return emptyMonth();
     }
   }
@@ -42,8 +56,7 @@
     try {
       localStorage.setItem(storageKey(activeMonth), JSON.stringify(state));
     } catch (error) {
-      alert("Não foi possível salvar os dados. Verifique o espaço disponível no navegador.");
-      console.error(error);
+      alert("Erro ao salvar.");
     }
   }
   function numberOrZero(value) {
@@ -69,7 +82,7 @@
   function formatDate(dateString) {
     if (!dateString) return "—";
     const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
+    return `${day}/${month}`;
   }
   function monthLabel(key) {
     const [year, month] = key.split("-").map(Number);
@@ -85,25 +98,14 @@
     }
     monthSelect.innerHTML = options.join("");
     monthSelect.value = activeMonth;
-    if (!monthSelect.value) {
-      const option = document.createElement("option");
-      option.value = activeMonth;
-      option.textContent = monthLabel(activeMonth);
-      monthSelect.append(option);
-      monthSelect.value = activeMonth;
-    }
   }
 
   function renderSummary() {
-    const totalDeposits = state.transactions
-      .filter(t => t.type === "deposit")
-      .reduce((total, item) => total + numberOrZero(item.amount), 0);
+    const totalDeposits = state.transactions.filter(t => t.type === "deposit").reduce((total, item) => total + numberOrZero(item.amount), 0);
+    const totalWithdrawals = state.transactions.filter(t => t.type === "withdrawal").reduce((total, item) => total + numberOrZero(item.amount), 0);
     
-    const totalWithdrawals = state.transactions
-      .filter(t => t.type === "withdrawal")
-      .reduce((total, item) => total + numberOrZero(item.amount), 0);
-    
-    const spent = state.expenses.reduce((total, item) => total + numberOrZero(item.amount), 0);
+    // Gastos pagos descontam do saldo. Pendentes não.
+    const spent = state.expenses.filter(e => e.done).reduce((total, item) => total + numberOrZero(item.amount), 0);
     
     const available = totalDeposits - totalWithdrawals - spent;
     const remaining = available;
@@ -121,18 +123,16 @@
   function renderTransactions() {
     const list = $("transactionList");
     if (!state.transactions.length) {
-      list.innerHTML = '<div class="empty">Nenhuma movimentação bancária cadastrada.</div>';
+      list.innerHTML = '<div class="empty">Nenhuma movimentação cadastrada.</div>';
       return;
     }
     const sorted = [...state.transactions].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     list.innerHTML = sorted.map(item => `
       <div class="transaction-row">
-        <span class="expense-name"><span class="transaction-type ${item.type}">[${item.type === 'deposit' ? 'Depósito' : 'Saque'}]</span> ${escapeHTML(item.name)}</span>
+        <span class="expense-name"><span class="transaction-type ${item.type}">[${item.type === 'deposit' ? 'Dep.' : 'Saq.'}]</span> ${escapeHTML(item.name)}</span>
         <time class="expense-date" datetime="${escapeHTML(item.date || "")}">${formatDate(item.date)}</time>
-        <span class="expense-value ${item.type === 'deposit' ? 'positive' : 'negative'}">
-          ${item.type === 'deposit' ? '+' : '-'} ${money(numberOrZero(item.amount))}
-        </span>
-        <button class="delete" type="button" data-delete-transaction="${escapeHTML(item.id)}" aria-label="Excluir" title="Excluir">×</button>
+        <span class="expense-value ${item.type === 'deposit' ? 'positive' : 'negative'}">${item.type === 'deposit' ? '+' : '-'} ${money(numberOrZero(item.amount))}</span>
+        <button class="delete" type="button" data-delete-transaction="${escapeHTML(item.id)}" title="Excluir">×</button>
       </div>`).join("");
   }
 
@@ -149,7 +149,7 @@
         <span class="loan-name">${escapeHTML(item.name)}</span>
         <span class="loan-rate" style="text-align: right;">${item.rate}%</span>
         <span class="loan-value positive">${money(finalValue)}</span>
-        <button class="delete" type="button" data-delete-loan="${escapeHTML(item.id)}" aria-label="Excluir" title="Excluir">×</button>
+        <button class="delete" type="button" data-delete-loan="${escapeHTML(item.id)}" title="Excluir">×</button>
       </div>`;
     }).join("");
   }
@@ -157,16 +157,22 @@
   function renderExpenses() {
     const list = $("expenseList");
     if (!state.expenses.length) {
-      list.innerHTML = '<div class="empty">Nenhum gasto cadastrado neste mês.</div>';
+      list.innerHTML = '<div class="empty">Nenhum gasto cadastrado.</div>';
       return;
     }
     const sorted = [...state.expenses].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     list.innerHTML = sorted.map(item => `
-      <div class="expense-row">
+      <div class="expense-row ${item.done ? 'done' : ''}">
+        <button class="check-btn ${item.done ? 'active' : ''}" type="button" data-toggle-expense="${escapeHTML(item.id)}" title="${item.done ? 'Marcar como pendente' : 'Marcar como pago'}">
+          ${item.done ? '✓' : ''}
+        </button>
         <span class="expense-name">${escapeHTML(item.name)}</span>
         <time class="expense-date" datetime="${escapeHTML(item.date || "")}">${formatDate(item.date)}</time>
         <span class="expense-value negative">${money(numberOrZero(item.amount))}</span>
-        <button class="delete" type="button" data-delete-expense="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.name)}" title="Excluir">×</button>
+        <div class="actions-cell">
+          <button class="edit" type="button" data-edit-expense="${escapeHTML(item.id)}" title="Editar">✎</button>
+          <button class="delete" type="button" data-delete-expense="${escapeHTML(item.id)}" title="Excluir">×</button>
+        </div>
       </div>`).join("");
   }
 
@@ -181,7 +187,7 @@
         <span class="future-name">${escapeHTML(item.name)}</span>
         <span class="future-condition">${escapeHTML(item.condition)}</span>
         <span class="future-value">${money(numberOrZero(item.amount))}</span>
-        <button class="delete" type="button" data-delete-future="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.name)}" title="Excluir">×</button>
+        <button class="delete" type="button" data-delete-future="${escapeHTML(item.id)}" title="Excluir">×</button>
       </div>`).join("");
   }
 
@@ -196,45 +202,35 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  // Lógica do Toggle Extrato
+  // Toggles
   toggleExtratoBtn.addEventListener("click", () => {
     const isHidden = transactionSection.classList.contains("is-hidden");
-    if (isHidden) {
-      transactionSection.classList.remove("is-hidden");
-      toggleExtratoBtn.textContent = "− Extrato";
-      toggleExtratoBtn.classList.add("active");
-      toggleExtratoBtn.setAttribute("aria-expanded", "true");
-    } else {
-      transactionSection.classList.add("is-hidden");
-      toggleExtratoBtn.textContent = "+ Extrato";
-      toggleExtratoBtn.classList.remove("active");
-      toggleExtratoBtn.setAttribute("aria-expanded", "false");
-    }
+    transactionSection.classList.toggle("is-hidden");
+    toggleExtratoBtn.textContent = isHidden ? "− Extrato" : "+ Extrato";
+    toggleExtratoBtn.classList.toggle("active", isHidden);
   });
 
-  // Lógica do Toggle Empréstimos
   toggleEmprestimoBtn.addEventListener("click", () => {
     const isHidden = loanSection.classList.contains("is-hidden");
-    if (isHidden) {
-      loanSection.classList.remove("is-hidden");
-      toggleEmprestimoBtn.textContent = "− Empréstimos";
-      toggleEmprestimoBtn.classList.add("active");
-      toggleEmprestimoBtn.setAttribute("aria-expanded", "true");
-    } else {
-      loanSection.classList.add("is-hidden");
-      toggleEmprestimoBtn.textContent = "+ Empréstimos";
-      toggleEmprestimoBtn.classList.remove("active");
-      toggleEmprestimoBtn.setAttribute("aria-expanded", "false");
-    }
+    loanSection.classList.toggle("is-hidden");
+    toggleEmprestimoBtn.textContent = isHidden ? "− Empréstimos" : "+ Empréstimos";
+    toggleEmprestimoBtn.classList.toggle("active", isHidden);
   });
 
   monthSelect.addEventListener("change", () => {
     activeMonth = monthSelect.value;
     state = loadMonth(activeMonth);
+    // Reseta o form de edição ao trocar de mês
+    expenseIdEdit.value = "";
+    $("expenseForm").reset();
+    $("expenseSubmitBtn").textContent = "Adicionar gasto";
+    expenseCancelBtn.classList.add("is-hidden");
+    $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
+    
     renderAll();
   });
 
-  // --- Formulário de Transações ---
+  // --- Ações Extrato ---
   $("transactionForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("transactionName").value.trim();
@@ -242,19 +238,13 @@
     const type = $("transactionType").value;
     const date = $("transactionDate").value;
     
-    if (!name || !Number.isFinite(amount) || amount <= 0 || !date) {
-      alert("Preencha descrição, valor válido e data.");
-      return;
-    }
-    if (date.slice(0, 7) !== activeMonth) {
-      alert("A data da movimentação precisa pertencer ao mês selecionado.");
-      return;
-    }
+    if (!name || !Number.isFinite(amount) || amount <= 0 || !date) return alert("Preencha tudo.");
+    if (date.slice(0, 7) !== activeMonth) return alert("Data fora do mês.");
     
     state.transactions.push({ id: createId(), name, amount, type, date });
     save();
     event.target.reset();
-    $("transactionDate").value = `${activeMonth}-01`;
+    $("transactionDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
     renderSummary();
     renderTransactions();
   });
@@ -268,24 +258,15 @@
     renderTransactions();
   });
 
-  // --- Formulário de Empréstimos ---
+  // --- Ações Empréstimo ---
   $("loanForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("loanName").value.trim();
     const amount = parseMoney($("loanAmount").value);
-    const rateInput = $("loanRate").value.trim();
-    
     let rate = 0;
-    if (rateInput) {
-      const cleanRate = rateInput.replace(",", ".");
-      rate = Number(cleanRate);
-      if (!Number.isFinite(rate) || rate < 0) rate = 0;
-    }
+    if ($("loanRate").value) rate = Number($("loanRate").value.replace(",", ".")) || 0;
     
-    if (!name || !Number.isFinite(amount) || amount <= 0) {
-      alert("Preencha o nome e um valor válido para o empréstimo.");
-      return;
-    }
+    if (!name || !Number.isFinite(amount) || amount <= 0) return alert("Preencha nome e valor.");
     
     state.loans.push({ id: createId(), name, amount, rate });
     save();
@@ -302,53 +283,101 @@
     renderLoans();
   });
 
-  // --- Formulário de Gastos ---
+  // --- Ações Gastos ---
   $("expenseForm").addEventListener("submit", event => {
     event.preventDefault();
+    const id = expenseIdEdit.value;
     const name = $("expenseName").value.trim();
     const amount = parseMoney($("expenseAmount").value);
     const date = $("expenseDate").value;
-    if (!name || !Number.isFinite(amount) || amount <= 0 || !date) {
-      alert("Preencha nome, valor válido e data do gasto.");
-      return;
+    
+    if (!name || !Number.isFinite(amount) || amount <= 0 || !date) return alert("Preencha tudo.");
+    if (date.slice(0, 7) !== activeMonth) return alert("A data deve ser do mês selecionado.");
+
+    if (id) {
+      // Editando
+      const index = state.expenses.findIndex(e => e.id === id);
+      if (index !== -1) {
+        state.expenses[index] = { ...state.expenses[index], name, amount, date };
+      }
+      expenseIdEdit.value = "";
+      expenseSubmitBtn.textContent = "Adicionar gasto";
+      expenseCancelBtn.classList.add("is-hidden");
+    } else {
+      // Novo
+      state.expenses.push({ id: createId(), name, amount, date, done: false });
     }
-    if (date.slice(0, 7) !== activeMonth) {
-      alert("A data do gasto precisa pertencer ao mês selecionado.");
-      return;
-    }
-    state.expenses.push({ id: createId(), name, amount, date });
+    
     save();
     event.target.reset();
-    $("expenseDate").value = `${activeMonth}-01`;
+    $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
     renderSummary();
     renderExpenses();
+  });
+
+  expenseCancelBtn.addEventListener("click", () => {
+    expenseIdEdit.value = "";
+    $("expenseForm").reset();
+    expenseSubmitBtn.textContent = "Adicionar gasto";
+    expenseCancelBtn.classList.add("is-hidden");
+    $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
   });
 
   $("expenseList").addEventListener("click", event => {
-    const button = event.target.closest("[data-delete-expense]");
-    if (!button) return;
-    state.expenses = state.expenses.filter(item => item.id !== button.dataset.deleteExpense);
-    save();
-    renderSummary();
-    renderExpenses();
+    const btnDelete = event.target.closest("[data-delete-expense]");
+    if (btnDelete) {
+      state.expenses = state.expenses.filter(item => item.id !== btnDelete.dataset.deleteExpense);
+      save();
+      renderSummary();
+      renderExpenses();
+      return;
+    }
+
+    const btnToggle = event.target.closest("[data-toggle-expense]");
+    if (btnToggle) {
+      const item = state.expenses.find(e => e.id === btnToggle.dataset.toggleExpense);
+      if (item) {
+        item.done = !item.done;
+        save();
+        renderSummary();
+        renderExpenses();
+      }
+      return;
+    }
+
+    const btnEdit = event.target.closest("[data-edit-expense]");
+    if (btnEdit) {
+      const id = btnEdit.dataset.editExpense;
+      const item = state.expenses.find(e => e.id === id);
+      if (item) {
+        expenseIdEdit.value = item.id;
+        $("expenseName").value = item.name;
+        $("expenseAmount").value = item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        $("expenseDate").value = item.date;
+        
+        expenseSubmitBtn.textContent = "Salvar Alterações";
+        expenseCancelBtn.classList.remove("is-hidden");
+        
+        // Rola para o topo do form
+        $("expenseForm").scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   });
 
-  // --- Formulário de Pendências Futuras ---
+  // --- Ações Pendências ---
   $("futureForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("futureName").value.trim();
     const amount = parseMoney($("futureAmount").value);
     const condition = $("futureCondition").value.trim();
-    if (!name || !Number.isFinite(amount) || amount <= 0 || !condition) {
-      alert("Preencha nome, valor válido e condição ou vencimento.");
-      return;
-    }
+    if (!name || !Number.isFinite(amount) || amount <= 0 || !condition) return alert("Preencha tudo.");
+    
     state.future.push({ id: createId(), name, amount, condition });
     save();
     event.target.reset();
     renderFuture();
   });
-  
+
   $("futureList").addEventListener("click", event => {
     const button = event.target.closest("[data-delete-future]");
     if (!button) return;
@@ -357,9 +386,14 @@
     renderFuture();
   });
 
+  // Init
   renderMonthOptions();
   state = loadMonth(activeMonth);
-  $("expenseDate").value = `${activeMonth}-01`;
-  $("transactionDate").value = `${activeMonth}-01`;
+  
+  // Seta a data atual por padrão
+  const today = getTodayDate();
+  $("expenseDate").value = today.startsWith(activeMonth) ? today : `${activeMonth}-01`;
+  $("transactionDate").value = today.startsWith(activeMonth) ? today : `${activeMonth}-01`;
+  
   renderAll();
 })();
