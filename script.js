@@ -35,7 +35,6 @@
   }
   function storageKey(month) { return `${STORAGE_PREFIX}-${month}`; }
   
-  // Função auxiliar para carregar um mês específico (usada na transferência)
   function loadSpecificMonth(monthKey) {
     try {
       const raw = localStorage.getItem(storageKey(monthKey));
@@ -62,7 +61,6 @@
     }
   }
 
-  // Função para salvar um mês específico (usada na transferência)
   function saveSpecificMonth(monthKey, monthState) {
     try {
       localStorage.setItem(storageKey(monthKey), JSON.stringify(monthState));
@@ -210,7 +208,6 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  // --- Toggles ---
   toggleExtratoBtn.addEventListener("click", () => {
     const isHidden = transactionSection.classList.contains("is-hidden");
     transactionSection.classList.toggle("is-hidden");
@@ -225,7 +222,6 @@
     toggleEmprestimoBtn.classList.toggle("active", isHidden);
   });
 
-  // --- Mudança de Mês ---
   monthSelect.addEventListener("change", () => {
     activeMonth = monthSelect.value;
     state = loadMonth(activeMonth);
@@ -237,7 +233,6 @@
     renderAll();
   });
 
-  // --- Form de Extrato ---
   $("transactionForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("transactionName").value.trim();
@@ -265,7 +260,6 @@
     renderTransactions();
   });
 
-  // --- Form de Empréstimo ---
   $("loanForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("loanName").value.trim();
@@ -290,7 +284,7 @@
     renderLoans();
   });
 
-  // --- Form de Gastos (COM LÓGICA DE TRANSFERÊNCIA) ---
+  // --- Form de Gastos ---
   $("expenseForm").addEventListener("submit", event => {
     event.preventDefault();
     const id = expenseIdEdit.value;
@@ -300,47 +294,39 @@
     
     if (!name || !Number.isFinite(amount) || amount <= 0 || !date) return alert("Preencha tudo.");
 
-    // O mês da data selecionada
     const targetMonth = date.slice(0, 7);
 
     if (id) {
-      // --- MODO EDIÇÃO ---
       const index = state.expenses.findIndex(e => e.id === id);
       if (index === -1) return;
       
       const oldExpense = state.expenses[index];
 
       if (targetMonth !== activeMonth) {
-        // TRANSFERÊNCIA: Mudou para um mês diferente
+        // Transferir de mês
         if (!confirm(`Mover este gasto para ${monthLabel(targetMonth)}?`)) return;
 
-        // 1. Remove do mês atual
+        // Remove do mês atual
         state.expenses.splice(index, 1);
         save();
 
-        // 2. Carrega o mês de destino, adiciona e salva
+        // Adiciona no mês de destino
         const targetState = loadSpecificMonth(targetMonth);
-        targetState.expenses.push({
-          ...oldExpense,
-          name,
-          amount,
-          date
-        });
+        targetState.expenses.push({ ...oldExpense, name, amount, date });
         saveSpecificMonth(targetMonth, targetState);
 
         alert("Gasto movido com sucesso!");
       } else {
-        // APENAS ATUALIZAÇÃO: Mesmo mês
+        // Apenas salva no mesmo mês
         state.expenses[index] = { ...oldExpense, name, amount, date };
         save();
       }
 
-      // Reseta o form
       expenseIdEdit.value = "";
       expenseSubmitBtn.textContent = "Adicionar gasto";
       expenseCancelBtn.classList.add("is-hidden");
     } else {
-      // --- MODO NOVO ---
+      // Novo gasto (validação do mês)
       if (targetMonth !== activeMonth) return alert("A data deve ser do mês selecionado.");
       state.expenses.push({ id: createId(), name, amount, date, done: false });
       save();
@@ -400,7 +386,6 @@
     }
   });
 
-  // --- Form de Pendências ---
   $("futureForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("futureName").value.trim();
@@ -422,7 +407,6 @@
     renderFuture();
   });
 
-  // --- Init ---
   renderMonthOptions();
   state = loadMonth(activeMonth);
   
