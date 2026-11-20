@@ -8,13 +8,11 @@
   let activeMonth = currentMonthKey();
   let state = emptyMonth();
 
-  // Elementos do Toggle
   const toggleExtratoBtn = $("toggleExtratoBtn");
   const transactionSection = $("transactionSection");
   const toggleEmprestimoBtn = $("toggleEmprestimoBtn");
   const loanSection = $("loanSection");
 
-  // Elementos de Edição de Gasto
   const expenseIdEdit = $("expenseIdEdit");
   const expenseSubmitBtn = $("expenseSubmitBtn");
   const expenseCancelBtn = $("expenseCancelBtn");
@@ -104,7 +102,6 @@
     const totalDeposits = state.transactions.filter(t => t.type === "deposit").reduce((total, item) => total + numberOrZero(item.amount), 0);
     const totalWithdrawals = state.transactions.filter(t => t.type === "withdrawal").reduce((total, item) => total + numberOrZero(item.amount), 0);
     
-    // Gastos pagos descontam do saldo. Pendentes não.
     const spent = state.expenses.filter(e => e.done).reduce((total, item) => total + numberOrZero(item.amount), 0);
     
     const available = totalDeposits - totalWithdrawals - spent;
@@ -202,7 +199,6 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
-  // Toggles
   toggleExtratoBtn.addEventListener("click", () => {
     const isHidden = transactionSection.classList.contains("is-hidden");
     transactionSection.classList.toggle("is-hidden");
@@ -220,17 +216,15 @@
   monthSelect.addEventListener("change", () => {
     activeMonth = monthSelect.value;
     state = loadMonth(activeMonth);
-    // Reseta o form de edição ao trocar de mês
     expenseIdEdit.value = "";
     $("expenseForm").reset();
-    $("expenseSubmitBtn").textContent = "Adicionar gasto";
+    expenseSubmitBtn.textContent = "Adicionar gasto";
     expenseCancelBtn.classList.add("is-hidden");
     $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
     
     renderAll();
   });
 
-  // --- Ações Extrato ---
   $("transactionForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("transactionName").value.trim();
@@ -258,7 +252,6 @@
     renderTransactions();
   });
 
-  // --- Ações Empréstimo ---
   $("loanForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("loanName").value.trim();
@@ -283,7 +276,6 @@
     renderLoans();
   });
 
-  // --- Ações Gastos ---
   $("expenseForm").addEventListener("submit", event => {
     event.preventDefault();
     const id = expenseIdEdit.value;
@@ -295,7 +287,6 @@
     if (date.slice(0, 7) !== activeMonth) return alert("A data deve ser do mês selecionado.");
 
     if (id) {
-      // Editando
       const index = state.expenses.findIndex(e => e.id === id);
       if (index !== -1) {
         state.expenses[index] = { ...state.expenses[index], name, amount, date };
@@ -304,7 +295,6 @@
       expenseSubmitBtn.textContent = "Adicionar gasto";
       expenseCancelBtn.classList.add("is-hidden");
     } else {
-      // Novo
       state.expenses.push({ id: createId(), name, amount, date, done: false });
     }
     
@@ -358,13 +348,11 @@
         expenseSubmitBtn.textContent = "Salvar Alterações";
         expenseCancelBtn.classList.remove("is-hidden");
         
-        // Rola para o topo do form
         $("expenseForm").scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   });
 
-  // --- Ações Pendências ---
   $("futureForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("futureName").value.trim();
@@ -386,11 +374,9 @@
     renderFuture();
   });
 
-  // Init
   renderMonthOptions();
   state = loadMonth(activeMonth);
   
-  // Seta a data atual por padrão
   const today = getTodayDate();
   $("expenseDate").value = today.startsWith(activeMonth) ? today : `${activeMonth}-01`;
   $("transactionDate").value = today.startsWith(activeMonth) ? today : `${activeMonth}-01`;

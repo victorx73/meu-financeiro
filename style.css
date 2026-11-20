@@ -91,13 +91,15 @@ h2 { font-size: 19px; }
 .section { padding: 34px 0 38px; border-bottom: 1px solid var(--line); }
 .subtext { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
 
-.button { border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: transparent; padding: 9px 13px; font-size: 12px; }
+.button { border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); background: transparent; padding: 9px 13px; font-size: 12px; white-space: nowrap; }
 .button:hover { background: var(--surface); }
 .button.primary { background: var(--text); color: #000; border-color: var(--text); }
 .button.primary:hover { background: #cfcfcf; }
 .button.danger { color: var(--red); border-color: var(--red); }
 
 .form-grid { display: grid; grid-template-columns: minmax(150px, 1.5fr) minmax(110px, .8fr) minmax(130px, .9fr) auto; gap: 9px; margin: 18px 0 20px; }
+.form-actions { display: flex; gap: 9px; }
+.form-actions button { flex: 1; }
 
 input::placeholder { color: var(--subtle); }
 input[type="date"] { color-scheme: dark; }
@@ -116,11 +118,10 @@ input[type="date"] { color-scheme: dark; }
 .expense-date { color: var(--muted); font-size: 11px; }
 .expense-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
 
-/* Checkbox e Botões de Ação */
 .check-btn { 
   width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 50%; 
   background: transparent; color: transparent; display: grid; place-items: center;
-  padding: 0; font-size: 10px;
+  padding: 0; font-size: 10px; cursor: pointer;
 }
 .check-btn.active { background: var(--green); border-color: var(--green); color: #000; }
 .actions-cell { display: flex; gap: 4px; justify-content: flex-end; }
@@ -132,7 +133,6 @@ input[type="date"] { color-scheme: dark; }
 .empty { padding: 24px 0; color: var(--subtle); font-size: 12px; text-align: center; }
 .future-note { margin: 6px 0 18px; color: var(--muted); font-size: 12px; }
 
-/* Pendências Futuras */
 .future-row { 
   display: grid; 
   grid-template-columns: minmax(0, 1fr) 100px 90px 26px; 
@@ -145,7 +145,6 @@ input[type="date"] { color-scheme: dark; }
 .future-condition { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
 .future-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
 
-/* Extrato Bancário */
 .transaction-row { 
   display: grid; 
   grid-template-columns: minmax(0, 1fr) 90px 100px 26px; 
@@ -158,7 +157,6 @@ input[type="date"] { color-scheme: dark; }
 .transaction-type.deposit { color: var(--green); }
 .transaction-type.withdrawal { color: var(--red); }
 
-/* Empréstimos */
 .loan-row { 
   display: grid; 
   grid-template-columns: minmax(0, 1fr) 60px 90px 26px; 
@@ -175,7 +173,6 @@ input[type="date"] { color-scheme: dark; }
 footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px 0 32px; color: var(--subtle); font-size: 10px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-/* Classes para o Toggle Minimalista */
 .is-hidden { display: none !important; }
 .toggle-btn { 
   background: transparent; border: 1px solid var(--line); color: var(--muted); 
@@ -200,15 +197,24 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
   .section { padding: 28px 0 30px; }
   .section-head { align-items: center; }
   
-  .form-grid, .loan-form { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .form-grid, .loan-form { 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px;
+  }
+  
   .form-grid input, .form-grid select, .form-grid button,
   .loan-form input, .loan-form select, .loan-form button { 
     width: 100% !important; max-width: 100%; min-width: 0; font-size: 13px; padding: 10px 8px; 
   }
-  .form-grid input:first-child, .loan-form input:first-child { grid-column: 1 / -1; }
-  .form-grid .form-actions { grid-column: 1 / -1; }
   
-  /* Ajustes das Listas no Mobile */
+  .form-grid input:first-child, .loan-form input:first-child { grid-column: 1 / -1; }
+  
+  .form-grid .form-actions { 
+    grid-column: 1 / -1; 
+  }
+  
+  .form-grid .form-actions button { width: 100% !important; }
+  
   .table-head, .expense-row { grid-template-columns: 20px minmax(0, 1fr) 60px 70px 46px; gap: 6px; }
   .table-head { font-size: 9px; }
   .expense-name, .expense-value { font-size: 12px; }
