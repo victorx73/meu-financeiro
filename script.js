@@ -34,9 +34,11 @@
     return { transactions: [], expenses: [], future: [], loans: [] };
   }
   function storageKey(month) { return `${STORAGE_PREFIX}-${month}`; }
-  function loadMonth(month) {
+  
+  // Função auxiliar para carregar um mês específico (usada na transferência)
+  function loadSpecificMonth(monthKey) {
     try {
-      const raw = localStorage.getItem(storageKey(month));
+      const raw = localStorage.getItem(storageKey(monthKey));
       if (!raw) return emptyMonth();
       const data = JSON.parse(raw);
       return {
@@ -45,11 +47,13 @@
         future: Array.isArray(data.future) ? data.future : [],
         loans: Array.isArray(data.loans) ? data.loans : []
       };
-    } catch (error) {
-      console.error("Erro ao carregar:", error);
-      return emptyMonth();
-    }
+    } catch (error) { return emptyMonth(); }
   }
+
+  function loadMonth(month) {
+    return loadSpecificMonth(month);
+  }
+
   function save() {
     try {
       localStorage.setItem(storageKey(activeMonth), JSON.stringify(state));
@@ -57,6 +61,14 @@
       alert("Erro ao salvar.");
     }
   }
+
+  // Função para salvar um mês específico (usada na transferência)
+  function saveSpecificMonth(monthKey, monthState) {
+    try {
+      localStorage.setItem(storageKey(monthKey), JSON.stringify(monthState));
+    } catch (error) { console.error(error); }
+  }
+
   function numberOrZero(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
@@ -101,7 +113,6 @@
   function renderSummary() {
     const totalDeposits = state.transactions.filter(t => t.type === "deposit").reduce((total, item) => total + numberOrZero(item.amount), 0);
     const totalWithdrawals = state.transactions.filter(t => t.type === "withdrawal").reduce((total, item) => total + numberOrZero(item.amount), 0);
-    
     const spent = state.expenses.filter(e => e.done).reduce((total, item) => total + numberOrZero(item.amount), 0);
     
     const available = totalDeposits - totalWithdrawals - spent;
@@ -199,6 +210,7 @@
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
+  // --- Toggles ---
   toggleExtratoBtn.addEventListener("click", () => {
     const isHidden = transactionSection.classList.contains("is-hidden");
     transactionSection.classList.toggle("is-hidden");
@@ -213,6 +225,7 @@
     toggleEmprestimoBtn.classList.toggle("active", isHidden);
   });
 
+  // --- Mudança de Mês ---
   monthSelect.addEventListener("change", () => {
     activeMonth = monthSelect.value;
     state = loadMonth(activeMonth);
@@ -221,10 +234,10 @@
     expenseSubmitBtn.textContent = "Adicionar gasto";
     expenseCancelBtn.classList.add("is-hidden");
     $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
-    
     renderAll();
   });
 
+  // --- Form de Extrato ---
   $("transactionForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("transactionName").value.trim();
@@ -252,6 +265,7 @@
     renderTransactions();
   });
 
+  // --- Form de Empréstimo ---
   $("loanForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("loanName").value.trim();
@@ -276,6 +290,7 @@
     renderLoans();
   });
 
+  // --- Form de Gastos (COM LÓGICA DE TRANSFERÊNCIA) ---
   $("expenseForm").addEventListener("submit", event => {
     event.preventDefault();
     const id = expenseIdEdit.value;
@@ -284,21 +299,53 @@
     const date = $("expenseDate").value;
     
     if (!name || !Number.isFinite(amount) || amount <= 0 || !date) return alert("Preencha tudo.");
-    if (date.slice(0, 7) !== activeMonth) return alert("A data deve ser do mês selecionado.");
+
+    // O mês da data selecionada
+    const targetMonth = date.slice(0, 7);
 
     if (id) {
+      // --- MODO EDIÇÃO ---
       const index = state.expenses.findIndex(e => e.id === id);
-      if (index !== -1) {
-        state.expenses[index] = { ...state.expenses[index], name, amount, date };
+      if (index === -1) return;
+      
+      const oldExpense = state.expenses[index];
+
+      if (targetMonth !== activeMonth) {
+        // TRANSFERÊNCIA: Mudou para um mês diferente
+        if (!confirm(`Mover este gasto para ${monthLabel(targetMonth)}?`)) return;
+
+        // 1. Remove do mês atual
+        state.expenses.splice(index, 1);
+        save();
+
+        // 2. Carrega o mês de destino, adiciona e salva
+        const targetState = loadSpecificMonth(targetMonth);
+        targetState.expenses.push({
+          ...oldExpense,
+          name,
+          amount,
+          date
+        });
+        saveSpecificMonth(targetMonth, targetState);
+
+        alert("Gasto movido com sucesso!");
+      } else {
+        // APENAS ATUALIZAÇÃO: Mesmo mês
+        state.expenses[index] = { ...oldExpense, name, amount, date };
+        save();
       }
+
+      // Reseta o form
       expenseIdEdit.value = "";
       expenseSubmitBtn.textContent = "Adicionar gasto";
       expenseCancelBtn.classList.add("is-hidden");
     } else {
+      // --- MODO NOVO ---
+      if (targetMonth !== activeMonth) return alert("A data deve ser do mês selecionado.");
       state.expenses.push({ id: createId(), name, amount, date, done: false });
+      save();
     }
     
-    save();
     event.target.reset();
     $("expenseDate").value = getTodayDate().startsWith(activeMonth) ? getTodayDate() : `${activeMonth}-01`;
     renderSummary();
@@ -353,6 +400,7 @@
     }
   });
 
+  // --- Form de Pendências ---
   $("futureForm").addEventListener("submit", event => {
     event.preventDefault();
     const name = $("futureName").value.trim();
@@ -374,6 +422,7 @@
     renderFuture();
   });
 
+  // --- Init ---
   renderMonthOptions();
   state = loadMonth(activeMonth);
   
