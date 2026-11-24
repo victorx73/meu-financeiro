@@ -115,7 +115,7 @@ input[type="date"] { color-scheme: dark; }
 .expense-row.done { opacity: 0.4; }
 .expense-row.done .expense-name { text-decoration: line-through; }
 .expense-name { min-width: 0; overflow-wrap: anywhere; }
-.expense-date { color: var(--muted); font-size: 11px; }
+.expense-date { color: var(--muted); font-size: 11px; text-align: center; justify-self: center; white-space: nowrap; }
 .expense-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
 
 .check-btn { 
@@ -133,18 +133,59 @@ input[type="date"] { color-scheme: dark; }
 .empty { padding: 24px 0; color: var(--subtle); font-size: 12px; text-align: center; }
 .future-note { margin: 6px 0 18px; color: var(--muted); font-size: 12px; }
 
-.future-table-head, .future-row { grid-template-columns: 24px minmax(0, 1fr) 100px 140px 68px !important; }
 .transaction-table-head { grid-template-columns: minmax(0, 1fr) 90px 100px 26px !important; }
+
+.transaction-table-head > span:nth-child(2),
+.transaction-row > .expense-date {
+  width: 90px;
+  text-align: center;
+  justify-self: center;
+}
+
+.loan-table-head,
+.loan-row { 
+  display: grid; 
+  grid-template-columns: 24px minmax(0, 1fr) 60px 90px 26px; 
+  align-items: center; 
+  column-gap: 8px;
+}
+.loan-table-head > span:nth-child(3),
+.loan-row > .loan-rate {
+  text-align: right;
+  justify-self: end;
+}
+
+.loan-table-head > span:nth-child(4),
+.loan-row > .loan-value {
+  text-align: right;
+  justify-self: end;
+}
+
+.loan-row > .loan-value,
+.loan-row > .loan-rate,
+.transaction-row > .expense-date,
+.transaction-row > .expense-value {
+  white-space: nowrap;
+}
 
 .future-row { 
   display: grid; 
-  grid-template-columns: 24px minmax(0, 1fr) 100px 140px 68px; 
+  grid-template-columns: 24px minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "check name actions"
+    "check condition value";
   align-items: center; 
   gap: 8px; 
   min-height: 58px; 
   border-bottom: 1px solid var(--line); 
 }
-.future-name { overflow-wrap: anywhere; font-size: 13px; }
+.future-name { 
+  overflow-wrap: anywhere; 
+  font-size: 13px; 
+  writing-mode: horizontal-tb;
+  white-space: normal;
+  word-break: normal;
+}
 .future-condition { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
 .future-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
 .future-value small { display: block; color: var(--subtle); font-size: 9px; }
@@ -211,7 +252,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
   .table-head, .expense-row { grid-template-columns: 20px minmax(0, 1fr) 60px 70px 46px; gap: 6px; }
   .table-head { font-size: 9px; }
   .expense-name, .expense-value { font-size: 12px; }
-  .expense-date { font-size: 10px; }
+  .expense-date { font-size: 10px; text-align: center; justify-self: center; white-space: nowrap; }
   .transaction-row { grid-template-columns: minmax(0, 1fr) 60px 70px 24px; gap: 6px; }
   .future-table-head,
   .future-row { grid-template-columns: 20px minmax(0, 1fr) 55px 78px 58px; gap: 4px; }
@@ -219,4 +260,132 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
   .future-name, .future-value, .loan-name, .loan-value, .transaction-name, .transaction-value { font-size: 12px; }
   .future-condition, .loan-rate, .transaction-date { font-size: 10px; }
   footer { flex-direction: column; }
+
+  .loan-table-head {
+    display: grid;
+  }
+
+  .future-table-head {
+    display: none;
+  }
+
+  .loan-row {
+    grid-template: none;
+    grid-template-columns: 20px minmax(0, 1fr) 45px 65px 24px;
+    grid-template-areas: none;
+    gap: 4px;
+    min-height: 58px;
+    padding: 0;
+  }
+
+  .loan-row .check-btn,
+  .loan-row .loan-name,
+  .loan-row .loan-rate,
+  .loan-row .loan-value,
+  .loan-row > .delete {
+    grid-area: auto;
+  }
+
+  .loan-row .loan-name { white-space: normal; }
+  .loan-row .loan-rate { text-align: right !important; }
+  .loan-row .loan-value { white-space: nowrap; }
+
+  .future-row {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check name actions"
+      "check condition value";
+    gap: 6px 10px;
+    min-height: 96px;
+    padding: 12px 0;
+  }
+
+  .future-row .check-btn { grid-area: check; }
+  .future-row .future-name {
+    grid-area: name;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+  .future-row .future-condition {
+    grid-area: condition;
+    text-align: left;
+  }
+  .future-row .future-value {
+    grid-area: value;
+    min-width: 0;
+    white-space: normal;
+  }
+  .future-row .actions-cell {
+    grid-area: actions;
+    justify-self: end;
+    min-width: 58px;
+  }
+
+  .loan-name,
+  .future-name,
+  .future-condition {
+    min-width: 0;
+  }
+
+  .loan-row,
+  .future-row {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .transaction-table-head,
+  .transaction-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 60px 72px 24px !important;
+    gap: 6px !important;
+  }
+
+  .transaction-table-head > span:nth-child(2),
+  .transaction-row > .expense-date {
+    width: 60px !important;
+    min-width: 60px !important;
+    text-align: center !important;
+    justify-self: center !important;
+  }
+
+  .transaction-table-head > span:nth-child(3),
+  .transaction-row > .expense-value {
+    text-align: right !important;
+  }
+
+  .loan-table-head,
+  .loan-row {
+    display: grid !important;
+    grid-template-columns: 20px minmax(0, 1fr) 52px 76px 24px !important;
+    grid-template-areas: none !important;
+    gap: 4px !important;
+  }
+
+  .loan-table-head > span:nth-child(3),
+  .loan-row > .loan-rate {
+    width: 52px !important;
+    padding-right: 3px;
+    text-align: right !important;
+    justify-self: end !important;
+  }
+
+  .loan-table-head > span:nth-child(4),
+  .loan-row > .loan-value {
+    width: 76px !important;
+    text-align: right !important;
+    justify-self: end !important;
+  }
+
+  .loan-row > .delete,
+  .loan-table-head > span:nth-child(5) {
+    justify-self: end !important;
+  }
+
+  .loan-row,
+  .loan-table-head,
+  .transaction-row,
+  .transaction-table-head {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }
