@@ -43,8 +43,12 @@
       return {
         transactions: Array.isArray(data.transactions) ? data.transactions : [],
         expenses: Array.isArray(data.expenses) ? data.expenses.map(e => ({ ...e, done: !!e.done })) : [],
-        future: Array.isArray(data.future) ? data.future : [],
-        loans: Array.isArray(data.loans) ? data.loans : []
+        future: Array.isArray(data.future) ? data.future.map(f => ({
+          ...f,
+          amount: numberOrZero(f.amount),
+          paid: Math.min(numberOrZero(f.paid), numberOrZero(f.amount))
+        })) : [],
+        loans: Array.isArray(data.loans) ? data.loans.map(l => ({ ...l, done: !!l.done })) : []
       };
     } catch (error) { return emptyMonth(); }
   }
@@ -112,18 +116,15 @@
     const totalDeposits = state.transactions.filter(t => t.type === "deposit").reduce((total, item) => total + numberOrZero(item.amount), 0);
     const totalWithdrawals = state.transactions.filter(t => t.type === "withdrawal").reduce((total, item) => total + numberOrZero(item.amount), 0);
     const spent = state.expenses.filter(e => e.done).reduce((total, item) => total + numberOrZero(item.amount), 0);
-    
-    const available = totalDeposits - totalWithdrawals - spent;
-    const remaining = available;
+    const activeLoans = state.loans.filter(l => !l.done).reduce((total, item) => total + numberOrZero(item.amount), 0);
+
+    const available = totalDeposits - totalWithdrawals - spent - activeLoans;
 
     $("availableInput").value = money(available);
     $("spentOutput").value = money(spent);
-    $("remainingOutput").value = money(remaining);
-    
+
     $("availableInput").classList.toggle("negative", available < 0);
     $("availableInput").classList.toggle("positive", available >= 0);
-    $("remainingOutput").classList.toggle("negative", remaining < 0);
-    $("remainingOutput").classList.toggle("positive", remaining >= 0);
   }
 
   function renderTransactions() {
@@ -149,11 +150,17 @@
       return;
     }
     list.innerHTML = state.loans.map(item => {
-      const finalValue = item.amount + (item.amount * (item.rate / 100));
+      const amount = numberOrZero(item.amount);
+      const rate = numberOrZero(item.rate);
+      const finalValue = amount + (amount * (rate / 100));
+      const done = !!item.done;
       return `
-      <div class="loan-row">
+      <div class="loan-row ${done ? 'done' : ''}">
+        <button class="check-btn ${done ? 'active' : ''}" type="button" data-toggle-loan="${escapeHTML(item.id)}" title="${done ? 'Marcar como não recebido' : 'Marcar como recebido'}">
+          ${done ? '✓' : ''}
+        </button>
         <span class="loan-name">${escapeHTML(item.name)}</span>
-        <span class="loan-rate" style="text-align: right;">${item.rate}%</span>
+        <span class="loan-rate" style="text-align: right;">${rate}%</span>
         <span class="loan-value positive">${money(finalValue)}</span>
         <button class="delete" type="button" data-delete-loan="${escapeHTML(item.id)}" title="Excluir">×</button>
       </div>`;
@@ -188,13 +195,27 @@
       list.innerHTML = '<div class="empty">Nenhuma pendência futura cadastrada.</div>';
       return;
     }
-    list.innerHTML = state.future.map(item => `
-      <div class="future-row">
+    list.innerHTML = state.future.map(item => {
+      const amount = numberOrZero(item.amount);
+      const paid = Math.min(numberOrZero(item.paid), amount);
+      const remaining = Math.max(0, amount - paid);
+      const complete = remaining <= 0;
+      return `
+      <div class="future-row ${complete ? 'done' : ''}">
+        <button class="check-btn ${complete ? 'active' : ''}" type="button" data-toggle-future="${escapeHTML(item.id)}" title="${complete ? 'Marcar como não paga' : 'Marcar como paga'}">
+          ${complete ? '✓' : ''}
+        </button>
         <span class="future-name">${escapeHTML(item.name)}</span>
         <span class="future-condition">${escapeHTML(item.condition)}</span>
-        <span class="future-value">${money(numberOrZero(item.amount))}</span>
-        <button class="delete" type="button" data-delete-future="${escapeHTML(item.id)}" title="Excluir">×</button>
-      </div>`).join("");
+        <span class="future-value ${complete ? 'positive' : ''}">
+          ${complete ? money(amount) : `${money(paid)} / ${money(amount)}<small>Restante ${money(remaining)}</small>`}
+        </span>
+        <div class="actions-cell">
+          <button class="pay" type="button" data-pay-future="${escapeHTML(item.id)}" title="Informar pagamento">Pagar</button>
+          <button class="delete" type="button" data-delete-future="${escapeHTML(item.id)}" title="Excluir">×</button>
+        </div>
+      </div>`;
+    }).join("");
   }
 
   function renderAll() {
@@ -269,18 +290,32 @@
     
     if (!name || !Number.isFinite(amount) || amount <= 0) return alert("Preencha nome e valor.");
     
-    state.loans.push({ id: createId(), name, amount, rate });
+    state.loans.push({ id: createId(), name, amount, rate, done: false });
     save();
     event.target.reset();
     $("loanRate").value = "0";
+    renderSummary();
     renderLoans();
   });
 
   $("loanList").addEventListener("click", event => {
-    const button = event.target.closest("[data-delete-loan]");
-    if (!button) return;
-    state.loans = state.loans.filter(item => item.id !== button.dataset.deleteLoan);
+    const toggleButton = event.target.closest("[data-toggle-loan]");
+    if (toggleButton) {
+      const item = state.loans.find(loan => loan.id === toggleButton.dataset.toggleLoan);
+      if (item) {
+        item.done = !item.done;
+        save();
+        renderSummary();
+        renderLoans();
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete-loan]");
+    if (!deleteButton) return;
+    state.loans = state.loans.filter(item => item.id !== deleteButton.dataset.deleteLoan);
     save();
+    renderSummary();
     renderLoans();
   });
 
@@ -393,16 +428,49 @@
     const condition = $("futureCondition").value.trim();
     if (!name || !Number.isFinite(amount) || amount <= 0 || !condition) return alert("Preencha tudo.");
     
-    state.future.push({ id: createId(), name, amount, condition });
+    state.future.push({ id: createId(), name, amount, paid: 0, condition });
     save();
     event.target.reset();
     renderFuture();
   });
 
   $("futureList").addEventListener("click", event => {
-    const button = event.target.closest("[data-delete-future]");
-    if (!button) return;
-    state.future = state.future.filter(item => item.id !== button.dataset.deleteFuture);
+    const toggleButton = event.target.closest("[data-toggle-future]");
+    if (toggleButton) {
+      const item = state.future.find(future => future.id === toggleButton.dataset.toggleFuture);
+      if (item) {
+        const paid = numberOrZero(item.paid);
+        item.paid = paid >= numberOrZero(item.amount) ? 0 : numberOrZero(item.amount);
+        save();
+        renderFuture();
+      }
+      return;
+    }
+
+    const payButton = event.target.closest("[data-pay-future]");
+    if (payButton) {
+      const item = state.future.find(future => future.id === payButton.dataset.payFuture);
+      if (item) {
+        const amount = numberOrZero(item.amount);
+        const alreadyPaid = numberOrZero(item.paid);
+        const remaining = Math.max(0, amount - alreadyPaid);
+        if (remaining <= 0) return alert("Esta pendência já foi paga.");
+
+        const answer = prompt(`Quanto deseja pagar desta pendência?\nRestante: ${money(remaining)}`, money(remaining));
+        if (answer === null) return;
+        const payment = parseMoney(answer);
+        if (!Number.isFinite(payment) || payment <= 0) return alert("Informe um valor válido.");
+
+        item.paid = Math.min(amount, alreadyPaid + payment);
+        save();
+        renderFuture();
+      }
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete-future]");
+    if (!deleteButton) return;
+    state.future = state.future.filter(item => item.id !== deleteButton.dataset.deleteFuture);
     save();
     renderFuture();
   });

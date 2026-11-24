@@ -35,17 +35,12 @@
           <div class="metric">
             <label>Disponível</label>
             <input id="availableInput" value="R$ 0,00" readonly aria-label="Saldo disponível">
-            <span class="hint">Depósitos menos saques e gastos</span>
+            <span class="hint">Depósitos menos saques, gastos pagos e empréstimos ativos</span>
           </div>
           <div class="metric">
             <label>Gastos</label>
             <input id="spentOutput" value="R$ 0,00" readonly aria-label="Total de gastos" class="negative">
-            <span class="hint">Total cadastrado no mês</span>
-          </div>
-          <div class="metric">
-            <label>Saldo restante</label>
-            <input id="remainingOutput" value="R$ 0,00" readonly aria-label="Saldo restante" class="positive">
-            <span class="hint">Disponível menos gastos</span>
+            <span class="hint">Total marcado como pago no mês</span>
           </div>
         </div>
       </section>
@@ -65,7 +60,7 @@
           <input id="transactionDate" type="date" required>
           <button class="button primary" type="submit" style="white-space: nowrap;">Adicionar</button>
         </form>
-        <div class="table-head"><span>DESCRIÇÃO</span><span>DATA</span><span style="text-align:right">VALOR</span><span></span></div>
+        <div class="table-head transaction-table-head"><span>DESCRIÇÃO</span><span>DATA</span><span style="text-align:right">VALOR</span><span></span></div>
         <div id="transactionList" aria-live="polite"></div>
       </section>
 
@@ -74,14 +69,14 @@
         <div class="section-head">
           <div><p class="eyebrow">CRÉDITO</p><h2 id="loanTitle">Empréstimos</h2></div>
         </div>
-        <p class="future-note">Estes valores não são descontados do saldo do mês. Use a taxa para calcular o retorno.</p>
+        <p class="future-note">O valor emprestado é descontado do disponível até ser marcado como recebido.</p>
         <form id="loanForm" class="loan-form">
           <input id="loanName" type="text" placeholder="Nome do devedor" maxlength="80" required>
           <input id="loanAmount" type="text" inputmode="decimal" placeholder="Valor emprestado (R$)" required>
           <input id="loanRate" type="text" inputmode="decimal" placeholder="Taxa (%)" value="0">
           <button class="button" type="submit" style="white-space: nowrap;">Adicionar empréstimo</button>
         </form>
-        <div class="table-head"><span>DEVEDOR</span><span style="text-align:right">TAXA</span><span style="text-align:right">VALOR FINAL</span><span></span></div>
+        <div class="table-head loan-table-head"><span></span><span>DEVEDOR</span><span style="text-align:right">TAXA</span><span style="text-align:right">VALOR FINAL</span><span></span></div>
         <div id="loanList" aria-live="polite"></div>
       </section>
 
@@ -120,10 +115,11 @@
           <input id="futureCondition" type="text" placeholder="Condição / vencimento" maxlength="60" required>
           <button class="button" type="submit" style="white-space: nowrap;">Adicionar pendência</button>
         </form>
-        <div class="table-head">
+        <div class="table-head future-table-head">
+          <span></span>
           <span>DESCRIÇÃO</span>
           <span>CONDIÇÃO</span>
-          <span style="text-align:right">VALOR</span>
+          <span style="text-align:right">PAGO / TOTAL</span>
           <span></span>
         </div>
         <div id="futureList" aria-live="polite"></div>

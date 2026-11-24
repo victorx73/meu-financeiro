@@ -78,7 +78,7 @@ h2 { font-size: 19px; }
 
 .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
 
-.summary { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.summary { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .metric { padding: 20px 22px 20px 0; min-width: 0; }
 .metric + .metric { border-left: 1px solid var(--line); padding-left: 22px; }
 .metric label { color: var(--muted); font-size: 12px; display: block; margin-bottom: 8px; }
@@ -133,9 +133,12 @@ input[type="date"] { color-scheme: dark; }
 .empty { padding: 24px 0; color: var(--subtle); font-size: 12px; text-align: center; }
 .future-note { margin: 6px 0 18px; color: var(--muted); font-size: 12px; }
 
+.future-table-head, .future-row { grid-template-columns: 24px minmax(0, 1fr) 100px 140px 68px !important; }
+.transaction-table-head { grid-template-columns: minmax(0, 1fr) 90px 100px 26px !important; }
+
 .future-row { 
   display: grid; 
-  grid-template-columns: minmax(0, 1fr) 100px 90px 26px; 
+  grid-template-columns: 24px minmax(0, 1fr) 100px 140px 68px; 
   align-items: center; 
   gap: 8px; 
   min-height: 58px; 
@@ -144,6 +147,9 @@ input[type="date"] { color-scheme: dark; }
 .future-name { overflow-wrap: anywhere; font-size: 13px; }
 .future-condition { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
 .future-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
+.future-value small { display: block; color: var(--subtle); font-size: 9px; }
+.pay { border: 0; background: transparent; color: var(--muted); font-size: 10px; padding: 4px 2px; }
+.pay:hover { color: var(--green); }
 
 .transaction-row { 
   display: grid; 
@@ -157,14 +163,16 @@ input[type="date"] { color-scheme: dark; }
 .transaction-type.deposit { color: var(--green); }
 .transaction-type.withdrawal { color: var(--red); }
 
+.loan-table-head,
 .loan-row { 
   display: grid; 
-  grid-template-columns: minmax(0, 1fr) 60px 90px 26px; 
+  grid-template-columns: 20px minmax(0, 1fr) 45px 65px 24px; 
   align-items: center; 
-  gap: 8px; 
-  min-height: 58px; 
-  border-bottom: 1px solid var(--line); 
+  gap: 4px; 
 }
+.loan-row { min-height: 58px; border-bottom: 1px solid var(--line); }
+.loan-row.done { opacity: 0.45; }
+.loan-row.done .loan-name { text-decoration: line-through; }
 .loan-name { overflow-wrap: anywhere; font-size: 13px; }
 .loan-rate { color: var(--muted); font-size: 11px; }
 .loan-value { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; }
@@ -186,46 +194,29 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
   .app { width: calc(100% - 32px); }
   header { min-height: 65px; }
   .overview { padding: 32px 0 28px; }
-  
   .summary { grid-template-columns: 1fr; }
   .metric { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 14px 0; }
   .metric + .metric { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
   .metric label { margin: 0; }
   .metric input { grid-column: 2; grid-row: 1 / span 2; text-align: right; font-size: 21px; max-width: 175px; }
   .metric .hint { margin: 0; }
-  
   .section { padding: 28px 0 30px; }
   .section-head { align-items: center; }
-  
-  .form-grid, .loan-form { 
-    grid-template-columns: 1fr 1fr; 
-    gap: 8px;
-  }
-  
+  .form-grid, .loan-form { grid-template-columns: 1fr 1fr; gap: 8px; }
   .form-grid input, .form-grid select, .form-grid button,
-  .loan-form input, .loan-form select, .loan-form button { 
-    width: 100% !important; max-width: 100%; min-width: 0; font-size: 13px; padding: 10px 8px; 
-  }
-  
+  .loan-form input, .loan-form select, .loan-form button { width: 100% !important; max-width: 100%; min-width: 0; font-size: 13px; padding: 10px 8px; }
   .form-grid input:first-child, .loan-form input:first-child { grid-column: 1 / -1; }
-  
-  .form-grid .form-actions { 
-    grid-column: 1 / -1; 
-  }
-  
+  .form-grid .form-actions { grid-column: 1 / -1; }
   .form-grid .form-actions button { width: 100% !important; }
-  
   .table-head, .expense-row { grid-template-columns: 20px minmax(0, 1fr) 60px 70px 46px; gap: 6px; }
   .table-head { font-size: 9px; }
   .expense-name, .expense-value { font-size: 12px; }
   .expense-date { font-size: 10px; }
-  
   .transaction-row { grid-template-columns: minmax(0, 1fr) 60px 70px 24px; gap: 6px; }
-  .future-row { grid-template-columns: minmax(0, 1fr) 60px 70px 24px; gap: 6px; }
-  .loan-row { grid-template-columns: minmax(0, 1fr) 45px 65px 24px; gap: 6px; }
-  
+  .future-table-head,
+  .future-row { grid-template-columns: 20px minmax(0, 1fr) 55px 78px 58px; gap: 4px; }
+  .loan-row { grid-template-columns: minmax(0, 1fr) 45px 65px 24px; gap: 4px; }
   .future-name, .future-value, .loan-name, .loan-value, .transaction-name, .transaction-value { font-size: 12px; }
   .future-condition, .loan-rate, .transaction-date { font-size: 10px; }
-  
   footer { flex-direction: column; }
 }
